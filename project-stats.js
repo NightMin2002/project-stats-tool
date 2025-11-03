@@ -1,10 +1,17 @@
 /**
- * 项目统计工具 v2.6
+ * 项目统计工具 v2.7 - 全面优化版
  * 智能统计项目的文字数量、代码行数和 tokens 估算
- * 
+ *
+ * v2.7 更新内容:
+ * - 修复HTML可视化报告的动画效果
+ * - 增强文件树交互功能（折叠/展开）
+ * - 智能区分可视化展示和统计分析的过滤规则
+ * - 优化图表显示和响应式布局
+ * - 提升大型项目的渲染性能
+ *
  * 使用方法:
  *   node project-stats.js [项目路径]
- *   
+ *
  * 示例:
  *   node project-stats.js              # 统计当前目录
  *   node project-stats.js ../my-app    # 统计指定项目
@@ -159,8 +166,11 @@ const LANGUAGE_MAP = {
 
 /**
  * 判断是否为第三方库文件
+ * @param {string} filePath - 文件路径
+ * @param {boolean} forVisualization - 是否用于可视化（文件树展示）
+ * @returns {boolean}
  */
-function isLibraryFile(filePath) {
+function isLibraryFile(filePath, forVisualization = false) {
   const relativePath = path.relative(CONFIG.rootDir, filePath).replace(/\\/g, '/');
   const fileName = path.basename(filePath).toLowerCase();
   
@@ -177,6 +187,12 @@ function isLibraryFile(filePath) {
     if (fileName.includes(pattern.toLowerCase())) {
       return true;
     }
+  }
+  
+  // 如果是用于可视化，不排除第三方库
+  // 这样文件树可以显示完整的项目结构
+  if (forVisualization) {
+    return false;
   }
   
   return false;
@@ -406,8 +422,8 @@ function walkDirectory(dir) {
       } else if (stat.isFile()) {
         const ext = path.extname(fullPath).toLowerCase();
         if (isCodeFile(fullPath) || isDocFile(fullPath)) {
-          // 检查是否为第三方库文件
-          if (isLibraryFile(fullPath)) {
+          // 检查是否为第三方库文件（用于文字提取和代码统计）
+          if (isLibraryFile(fullPath, false)) {
             stats.files.excluded.libraries++;
             stats.files.excluded.total++;
           } else {
@@ -615,11 +631,25 @@ function buildFileTreeData(dir, rootPath = CONFIG.rootDir) {
   };
   
   try {
-    const items = fs.readdirSync(dir).sort();
+    const items = fs.readdirSync(dir).sort((a, b) => {
+      // 目录优先排序
+      const fullPathA = path.join(dir, a);
+      const fullPathB = path.join(dir, b);
+      try {
+        const statA = fs.statSync(fullPathA);
+        const statB = fs.statSync(fullPathB);
+        if (statA.isDirectory() && !statB.isDirectory()) return -1;
+        if (!statA.isDirectory() && statB.isDirectory()) return 1;
+        return a.localeCompare(b);
+      } catch {
+        return a.localeCompare(b);
+      }
+    });
     
     items.forEach(item => {
       const fullPath = path.join(dir, item);
       
+      // 跳过排除的路径
       if (shouldExclude(fullPath)) {
         return;
       }
@@ -628,39 +658,47 @@ function buildFileTreeData(dir, rootPath = CONFIG.rootDir) {
         const stat = fs.statSync(fullPath);
         
         if (stat.isDirectory()) {
+          // 递归处理子目录
           const subTree = buildFileTreeData(fullPath, rootPath);
-          if (subTree.children.length > 0 || subTree.type === 'directory') {
-            tree.children.push(subTree);
-          }
+          // 始终包含目录节点，即使为空（用户可能想看到结构）
+          tree.children.push(subTree);
         } else {
           const ext = path.extname(fullPath).toLowerCase();
+          // 对于可视化文件树，包含所有代码和文档文件（包括第三方库）
           if (isCodeFile(fullPath) || isDocFile(fullPath)) {
-            if (!isLibraryFile(fullPath)) {
-              tree.children.push({
-                name: item,
-                path: path.relative(rootPath, fullPath),
-                type: 'file',
-                ext: ext,
-                size: stat.size
-              });
-            }
+            tree.children.push({
+              name: item,
+              path: path.relative(rootPath, fullPath),
+              type: 'file',
+              ext: ext,
+              size: stat.size
+            });
           }
         }
       } catch (error) {
-        // 忽略无权限文件
+        // 记录错误但继续处理其他文件
+        console.warn(`警告: 无法访问 ${fullPath}: ${error.message}`);
       }
     });
   } catch (error) {
-    // 忽略无权限目录
+    console.warn(`警告: 无法读取目录 ${dir}: ${error.message}`);
   }
   
   return tree;
 }
 
 /**
- * 生成 HTML 可视化报告 v2.6 - 夜间炫酷版
+ * 生成 HTML 可视化报告 v2.7 - 全面优化版（内嵌本地库）
  */
 function generateHTMLReport() {
+  // 读取本地库文件
+  const chartJs = fs.existsSync(path.join(__dirname, 'lib/chart.min.js'))
+    ? fs.readFileSync(path.join(__dirname, 'lib/chart.min.js'), 'utf8')
+    : '';
+  const particlesJs = fs.existsSync(path.join(__dirname, 'lib/particles.min.js'))
+    ? fs.readFileSync(path.join(__dirname, 'lib/particles.min.js'), 'utf8')
+    : '';
+  
   // 引入外部模板函数
   const generateEnhancedHTML = require('./html-report-template.js');
   
@@ -675,7 +713,10 @@ function generateHTMLReport() {
   
   const fileTreeData = buildFileTreeData(CONFIG.rootDir);
   
-  return generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize);
+  return generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize, {
+    chartJs,
+    particlesJs
+  });
 }
 
 /**
@@ -1126,8 +1167,9 @@ function generateMarkdownReport() {
   let markdown = `# 📊 项目统计报告
 
 > **生成时间**: ${timestamp}
-> **工具版本**: v2.6
-> **智能过滤**: 已排除第三方库文件
+> **工具版本**: v2.7
+> **智能过滤**: 已排除第三方库文件（统计分析）
+> **可视化**: 完整项目结构展示（包括第三方库）
 
 ---
 
@@ -1230,7 +1272,7 @@ function generateMarkdownReport() {
 
 ---
 
-*由 [项目统计工具 v2.6](https://github.com) 自动生成*
+*由 [项目统计工具 v2.7](https://github.com) 自动生成*
 `;
 
   return markdown;
@@ -1302,7 +1344,7 @@ function extractAllText(resultsDir) {
  */
 function printResults() {
   console.log('\n╔════════════════════════════════════════════════════════╗');
-  console.log('║              📊 项目统计结果 v2.6                      ║');
+  console.log('║              📊 项目统计结果 v2.7                      ║');
   console.log('╚════════════════════════════════════════════════════════╝\n');
   
   console.log('📁 项目信息');

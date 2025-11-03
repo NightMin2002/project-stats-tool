@@ -1,7 +1,7 @@
 // 这是一个临时文件，用于生成超炫酷的HTML报告模板
 // 将在 project-stats.js 中被引用
 
-module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize) {
+module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize, libs = {}) {
   const languageData = Object.entries(stats.files.byLanguage)
     .sort((a, b) => b[1] - a[1])
     .map(([lang, count]) => ({ language: lang, count: count }));
@@ -24,8 +24,8 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🌙 ${stats.project.name} - 项目统计报告</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  ${libs.chartJs ? `<script>${libs.chartJs}</script>` : '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>'}
+  ${libs.particlesJs ? `<script>${libs.particlesJs}</script>` : '<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>'}
   <style>
     * {
       margin: 0;
@@ -73,17 +73,25 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
     .header::before {
       content: '';
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(0,255,136,0.1) 0%, transparent 70%);
-      animation: glow 8s ease-in-out infinite;
+      top: 50%;
+      left: 50%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(0,255,136,0.15) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      animation: pulse 4s ease-in-out infinite;
+      pointer-events: none;
     }
     
-    @keyframes glow {
-      0%, 100% { transform: rotate(0deg); }
-      50% { transform: rotate(180deg); }
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.3;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      50% {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(1.1);
+      }
     }
     
     .header h1 {
@@ -239,10 +247,11 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       padding: 20px;
       border-radius: 10px;
       border: 1px solid rgba(0, 212, 255, 0.2);
-      max-height: 500px;
+      max-height: 600px;
       overflow-y: auto;
       font-family: 'Consolas', 'Monaco', monospace;
       font-size: 0.9em;
+      position: relative;
     }
     
     .file-tree::-webkit-scrollbar {
@@ -261,8 +270,12 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
     
     .tree-item {
       padding: 5px 0;
-      cursor: pointer;
       transition: all 0.2s ease;
+      user-select: none;
+    }
+    
+    .tree-item.clickable {
+      cursor: pointer;
     }
     
     .tree-item:hover {
@@ -283,6 +296,73 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       margin-left: 20px;
       border-left: 1px dashed rgba(0, 212, 255, 0.3);
       padding-left: 10px;
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+    
+    .tree-children.collapsed {
+      max-height: 0;
+      opacity: 0;
+      display: none;
+    }
+    
+    .tree-children.expanded {
+      max-height: none;
+      opacity: 1;
+    }
+    
+    .tree-count {
+      color: #888;
+      font-size: 0.85em;
+      font-weight: normal;
+    }
+    
+    .tree-size {
+      color: #666;
+      font-size: 0.8em;
+      font-weight: normal;
+      margin-left: 8px;
+    }
+    
+    .tree-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: rgba(0, 212, 255, 0.05);
+      border-radius: 8px;
+    }
+    
+    .tree-btn {
+      background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+      color: #0a0e27;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9em;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+    }
+    
+    .tree-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 212, 255, 0.5);
+    }
+    
+    .tree-btn:active {
+      transform: translateY(0);
+    }
+    
+    .tree-stats {
+      padding: 10px;
+      margin-bottom: 10px;
+      background: rgba(199, 112, 240, 0.1);
+      border-radius: 8px;
+      color: #c770f0;
+      font-weight: 600;
+      text-align: center;
     }
     
     table {
@@ -317,13 +397,71 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       font-size: 0.95em;
     }
     
+    /* 平滑滚动 */
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    /* 加载动画 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .section {
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    /* 响应式优化 */
+    @media (max-width: 1200px) {
+      .chart-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
     @media (max-width: 768px) {
       .header h1 {
         font-size: 2em;
       }
       
+      .header {
+        padding: 40px 20px;
+      }
+      
+      .container {
+        padding: 10px;
+      }
+      
+      .section {
+        padding: 20px;
+      }
+      
       .chart-grid, .stats-grid {
         grid-template-columns: 1fr;
+      }
+      
+      .meta {
+        grid-template-columns: 1fr;
+      }
+      
+      .file-tree {
+        font-size: 0.8em;
+        max-height: 400px;
+      }
+    }
+    
+    /* 打印样式 */
+    @media print {
+      #particles-js {
+        display: none;
+      }
+      
+      .section {
+        page-break-inside: avoid;
+      }
+      
+      .tree-controls {
+        display: none;
       }
     }
   </style>
@@ -348,7 +486,7 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       </div>
       <div class="meta-item">
         <div class="label">工具版本</div>
-        <div class="value">v2.6</div>
+        <div class="value">v2.7</div>
       </div>
     </div>
     
@@ -448,54 +586,71 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
     </div>
     
     <div class="footer">
-      由项目统计工具 v2.6 自动生成 | ${timestamp} | 🌙 Night Theme
+      由项目统计工具 v2.7 自动生成 | ${timestamp} | 🌙 Night Theme - 全面优化版
     </div>
   </div>
   
   <script>
-    // 粒子背景初始化
-    particlesJS('particles-js', {
-      particles: {
-        number: { value: 80, density: { enable: true, value_area: 800 } },
-        color: { value: ['#00ff88', '#00d4ff', '#c770f0'] },
-        shape: { type: 'circle' },
-        opacity: { value: 0.5, random: true },
-        size: { value: 3, random: true },
-        line_linked: {
-          enable: true,
-          distance: 150,
-          color: '#00d4ff',
-          opacity: 0.2,
-          width: 1
+    // 粒子背景初始化（修复兼容性问题）
+    if (typeof particlesJS !== 'undefined') {
+      particlesJS('particles-js', {
+        particles: {
+          number: { value: 80, density: { enable: true, value_area: 800 } },
+          color: { value: ['#00ff88', '#00d4ff', '#c770f0'] },
+          shape: { type: 'circle' },
+          opacity: { value: 0.5, random: true, anim: { enable: true, speed: 1, opacity_min: 0.1 } },
+          size: { value: 3, random: true, anim: { enable: true, speed: 2, size_min: 0.5 } },
+          line_linked: {
+            enable: true,
+            distance: 150,
+            color: '#00d4ff',
+            opacity: 0.2,
+            width: 1
+          },
+          move: {
+            enable: true,
+            speed: 2,
+            direction: 'none',
+            random: true,
+            straight: false,
+            out_mode: 'out',
+            bounce: false
+          }
         },
-        move: {
-          enable: true,
-          speed: 2,
-          direction: 'none',
-          random: true,
-          straight: false,
-          out_mode: 'out',
-          bounce: false
-        }
-      },
-      interactivity: {
-        detect_on: 'canvas',
-        events: {
-          onhover: { enable: true, mode: 'grab' },
-          onclick: { enable: true, mode: 'push' },
-          resize: true
+        interactivity: {
+          detect_on: 'canvas',
+          events: {
+            onhover: { enable: true, mode: 'grab' },
+            onclick: { enable: true, mode: 'push' },
+            resize: true
+          },
+          modes: {
+            grab: { distance: 140, line_linked: { opacity: 0.5 } },
+            push: { particles_nb: 4 }
+          }
         },
-        modes: {
-          grab: { distance: 140, line_linked: { opacity: 0.5 } },
-          push: { particles_nb: 4 }
-        }
-      },
-      retina_detect: true
-    });
+        retina_detect: true
+      });
+    } else {
+      console.warn('particlesJS 未加载，跳过粒子背景初始化');
+    }
     
-    // Chart.js 图表配置
+    // Chart.js 全局配置
     Chart.defaults.color = '#e0e0e0';
     Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(10, 14, 39, 0.9)';
+    Chart.defaults.plugins.tooltip.titleColor = '#00ff88';
+    Chart.defaults.plugins.tooltip.bodyColor = '#e0e0e0';
+    Chart.defaults.plugins.tooltip.borderColor = '#00d4ff';
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    Chart.defaults.plugins.tooltip.padding = 12;
+    
+    // 动画配置
+    const animationConfig = {
+      duration: 1500,
+      easing: 'easeInOutQuart'
+    };
     
     // 语言分布图
     new Chart(document.getElementById('languageChart'), {
@@ -504,15 +659,34 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
         labels: ${JSON.stringify(languageData.map(d => d.language))},
         datasets: [{
           data: ${JSON.stringify(languageData.map(d => d.count))},
-          backgroundColor: ['#00ff88', '#00d4ff', '#c770f0', '#ff6b9d', '#ffd700', 
+          backgroundColor: ['#00ff88', '#00d4ff', '#c770f0', '#ff6b9d', '#ffd700',
                           '#ff4757', '#5f27cd', '#00d2d3', '#ff6348', '#1e90ff']
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: animationConfig,
         plugins: {
-          legend: { position: 'right', labels: { color: '#e0e0e0', padding: 15 } }
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#e0e0e0',
+              padding: 15,
+              font: { size: 12 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return \`\${label}: \${value} 个 (\${percentage}%)\`;
+              }
+            }
+          }
         }
       }
     });
@@ -530,8 +704,25 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: animationConfig,
         plugins: {
-          legend: { position: 'bottom', labels: { color: '#e0e0e0', padding: 15 } }
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#e0e0e0',
+              padding: 15,
+              font: { size: 12 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                return \`\${label}: \${value.toLocaleString()} 行\`;
+              }
+            }
+          }
         }
       }
     });
@@ -550,37 +741,153 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        animation: animationConfig,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const value = context.parsed.y || 0;
+                return \`Tokens: \${value.toLocaleString()}\`;
+              }
+            }
+          }
+        },
         scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' } },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+            ticks: {
+              callback: function(value) {
+                return value.toLocaleString();
+              }
+            }
+          },
           x: { grid: { color: 'rgba(255, 255, 255, 0.1)' } }
         }
       }
     });
     
-    // 文件树渲染
-    function renderTree(node, level = 0) {
+    // 文件树渲染（增强版 - 支持折叠/展开）
+    let expandedFolders = new Set();
+    let fileCount = 0;
+    let folderCount = 0;
+    
+    function renderTree(node, level = 0, parentPath = '') {
+      if (!node) return '';
+      
+      const currentPath = parentPath ? \`\${parentPath}/\${node.name}\` : node.name;
       const indent = '  '.repeat(level);
       let html = '';
       
       if (node.type === 'directory') {
-        html += \`<div class="tree-item tree-folder">\${indent}📁 \${node.name}</div>\`;
-        if (node.children && node.children.length > 0) {
-          html += '<div class="tree-children">';
-          node.children.forEach(child => {
-            html += renderTree(child, level + 1);
-          });
+        folderCount++;
+        const hasChildren = node.children && node.children.length > 0;
+        const isExpanded = expandedFolders.has(currentPath);
+        const expandIcon = hasChildren ? (isExpanded ? '▼' : '▶') : '○';
+        const itemClass = hasChildren ? 'tree-folder clickable' : 'tree-folder';
+        
+        html += \`<div class="tree-item \${itemClass}" data-path="\${currentPath}" onclick="toggleFolder(this, '\${currentPath}')">\`;
+        html += \`\${indent}\${expandIcon} 📁 \${node.name}\`;
+        if (hasChildren) {
+          html += \` <span class="tree-count">(\${node.children.length})</span>\`;
+        }
+        html += \`</div>\`;
+        
+        if (hasChildren) {
+          const childrenClass = isExpanded ? 'tree-children expanded' : 'tree-children collapsed';
+          html += \`<div class="\${childrenClass}">\`;
+          node.children
+            .sort((a, b) => {
+              if (a.type === b.type) return a.name.localeCompare(b.name);
+              return a.type === 'directory' ? -1 : 1;
+            })
+            .forEach(child => {
+              html += renderTree(child, level + 1, currentPath);
+            });
           html += '</div>';
         }
       } else {
-        html += \`<div class="tree-item tree-file">\${indent}📄 \${node.name}</div>\`;
+        fileCount++;
+        const ext = node.ext || '';
+        const sizeLabel = node.size ? formatBytes(node.size) : '';
+        html += \`<div class="tree-item tree-file" title="\${currentPath}">\`;
+        html += \`\${indent}📄 \${node.name}\`;
+        if (sizeLabel) {
+          html += \` <span class="tree-size">\${sizeLabel}</span>\`;
+        }
+        html += \`</div>\`;
       }
       
       return html;
     }
     
+    function toggleFolder(element, path) {
+      if (expandedFolders.has(path)) {
+        expandedFolders.delete(path);
+      } else {
+        expandedFolders.add(path);
+      }
+      refreshTree();
+    }
+    
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + 'B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+    }
+    
+    function refreshTree() {
+      fileCount = 0;
+      folderCount = 0;
+      document.getElementById('fileTree').innerHTML = renderTree(fileTreeData);
+      updateTreeStats();
+    }
+    
+    function updateTreeStats() {
+      const statsHtml = \`<div class="tree-stats">📊 \${folderCount} 个文件夹, \${fileCount} 个文件</div>\`;
+      const existingStats = document.querySelector('.tree-stats');
+      if (existingStats) {
+        existingStats.innerHTML = statsHtml;
+      } else {
+        document.getElementById('fileTree').insertAdjacentHTML('beforebegin', statsHtml);
+      }
+    }
+    
+    function expandAll() {
+      function collectAllPaths(node, parentPath = '') {
+        const currentPath = parentPath ? \`\${parentPath}/\${node.name}\` : node.name;
+        if (node.type === 'directory' && node.children && node.children.length > 0) {
+          expandedFolders.add(currentPath);
+          node.children.forEach(child => collectAllPaths(child, currentPath));
+        }
+      }
+      collectAllPaths(fileTreeData);
+      refreshTree();
+    }
+    
+    function collapseAll() {
+      expandedFolders.clear();
+      refreshTree();
+    }
+    
+    // 初始化文件树数据
     const fileTreeData = ${JSON.stringify(fileTreeData)};
-    document.getElementById('fileTree').innerHTML = renderTree(fileTreeData);
+    
+    // 默认展开根目录
+    expandedFolders.add(fileTreeData.name);
+    
+    // 渲染树
+    refreshTree();
+    
+    // 添加控制按钮
+    const treeControls = \`
+      <div class="tree-controls">
+        <button onclick="expandAll()" class="tree-btn">全部展开</button>
+        <button onclick="collapseAll()" class="tree-btn">全部折叠</button>
+      </div>
+    \`;
+    document.getElementById('fileTree').insertAdjacentHTML('beforebegin', treeControls);
   </script>
 </body>
 </html>`;
