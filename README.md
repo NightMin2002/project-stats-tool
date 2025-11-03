@@ -49,7 +49,7 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/your-username/project-stats-tool.git
+git clone https://github.com/NightMin2002/project-stats-tool.git
 
 # 2. 进入目录
 cd project-stats-tool
@@ -328,8 +328,8 @@ const CONFIG = {
 
 **Ω Code Agent**
 
-- GitHub: [@your-username](https://github.com/your-username)
-- Email: your.email@example.com
+- GitHub: [@NightMin2002](https://github.com/NightMin2002)
+- Email: nightmin200202@gmail.com
 
 ---
 
@@ -345,8 +345,8 @@ const CONFIG = {
 
 如有问题、建议或需要帮助，请：
 
-- 📝 [提交 Issue](https://github.com/your-username/project-stats-tool/issues)
-- 💬 [发起讨论](https://github.com/your-username/project-stats-tool/discussions)
+- 📝 [提交 Issue](https://github.com/NightMin2002/project-stats-tool/issues)
+- 💬 [发起讨论](https://github.com/NightMin2002/project-stats-tool/discussions)
 - ⭐ 如果觉得有用，请给个星标！
 
 ---
