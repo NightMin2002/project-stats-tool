@@ -9,8 +9,8 @@
 const fs = require('fs');
 const path = require('path');
 
-// 获取命令行参数
-const targetDir = process.argv[2] ? path.resolve(process.argv[2]) : process.cwd();
+// 获取命令行参数，默认为上级目录（统计项目而非工具本身）
+const targetDir = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(process.cwd(), '..');
 
 // 配置
 const CONFIG = {
@@ -39,7 +39,7 @@ const CONFIG = {
     'vendor', 'venv', '__pycache__',
     '.idea', '.vscode', '.DS_Store',
     'coverage', '.nyc_output',
-    '统计工具', 'stats-tool', 'project-stats', 'results'
+    '统计工具', 'stats-tool', 'project-stats-tool', 'results'
   ]
 };
 
@@ -58,9 +58,12 @@ function shouldExclude(filePath) {
     return true;
   }
   
-  // 排除包含提取脚本的目录
+  // 排除包含提取脚本的目录，但不排除根目录本身
   const dirPath = path.dirname(filePath);
-  if (fs.existsSync(path.join(dirPath, 'extract-text.js'))) {
+  const isToolDir = fs.existsSync(path.join(dirPath, 'extract-text.js'));
+  const isRootDir = path.resolve(dirPath) === path.resolve(CONFIG.rootDir);
+  
+  if (isToolDir && !isRootDir) {
     return true;
   }
   

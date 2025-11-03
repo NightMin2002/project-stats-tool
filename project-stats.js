@@ -1,5 +1,5 @@
 /**
- * 项目统计工具 v2.3
+ * 项目统计工具 v2.6
  * 智能统计项目的文字数量、代码行数和 tokens 估算
  * 
  * 使用方法:
@@ -13,8 +13,8 @@
 const fs = require('fs');
 const path = require('path');
 
-// 获取命令行参数指定的目录，默认为当前工作目录
-const targetDir = process.argv[2] ? path.resolve(process.argv[2]) : process.cwd();
+// 获取命令行参数指定的目录，默认为上级目录（统计项目而非工具本身）
+const targetDir = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(process.cwd(), '..');
 
 // 配置
 const CONFIG = {
@@ -49,7 +49,7 @@ const CONFIG = {
     'vendor', 'venv', '__pycache__',
     '.idea', '.vscode', '.DS_Store',
     'coverage', '.nyc_output',
-    '统计工具', 'stats-tool', 'project-stats', 'results'
+    '统计工具', 'stats-tool', 'project-stats-tool', 'results'
   ],
   
   // 第三方库目录（智能识别）
@@ -194,9 +194,12 @@ function shouldExclude(filePath) {
     return true;
   }
   
-  // 智能排除：如果目录包含 project-stats.js，排除该目录
+  // 智能排除：如果目录包含 project-stats.js，但不是根目录本身，则排除该目录
   const dirPath = path.dirname(filePath);
-  if (fs.existsSync(path.join(dirPath, 'project-stats.js'))) {
+  const isToolDir = fs.existsSync(path.join(dirPath, 'project-stats.js'));
+  const isRootDir = path.resolve(dirPath) === path.resolve(CONFIG.rootDir);
+  
+  if (isToolDir && !isRootDir) {
     return true;
   }
   
@@ -462,6 +465,650 @@ function formatSize(bytes) {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
+/**
+ * 构建目录树结构
+ */
+function buildDirectoryTree(dir, prefix = '', isLast = true) {
+  let tree = '';
+  
+  try {
+    const items = fs.readdirSync(dir).sort();
+    const validItems = items.filter(item => {
+      const fullPath = path.join(dir, item);
+      return !shouldExclude(fullPath);
+    });
+    
+    validItems.forEach((item, index) => {
+      const fullPath = path.join(dir, item);
+      const isLastItem = index === validItems.length - 1;
+      const connector = isLastItem ? '└── ' : '├── ';
+      const extension = isLastItem ? '    ' : '│   ';
+      
+      try {
+        const stat = fs.statSync(fullPath);
+        const isDirectory = stat.isDirectory();
+        const icon = isDirectory ? '📁' : '📄';
+        
+        tree += `${prefix}${connector}${icon} ${item}\n`;
+        
+        if (isDirectory) {
+          tree += buildDirectoryTree(fullPath, prefix + extension, isLastItem);
+        }
+      } catch (error) {
+        // 忽略无权限文件
+      }
+    });
+  } catch (error) {
+    // 忽略无权限目录
+  }
+  
+  return tree;
+}
+
+/**
+ * 生成项目结构树形图
+ */
+function generateProjectStructure() {
+  console.log('\n🌳 正在生成项目结构树...');
+  
+  const projectName = stats.project.name;
+  const timestamp = new Date().toLocaleString('zh-CN');
+  
+  let structure = `╔════════════════════════════════════════════════════════╗
+║           ${projectName} - 项目结构树                
+║           生成时间: ${timestamp}
+╚════════════════════════════════════════════════════════╝
+
+项目路径: ${stats.project.path}
+项目类型: ${stats.project.type}
+
+📦 ${projectName}/
+`;
+  
+  structure += buildDirectoryTree(CONFIG.rootDir, '');
+  
+  structure += `
+════════════════════════════════════════════════════════
+
+📊 统计摘要:
+   • 总文件数: ${formatNumber(stats.files.total)} 个
+   • 总目录数: (已包含在树中)
+   • 排除文件: ${formatNumber(stats.files.excluded.libraries)} 个第三方库
+
+*由项目统计工具 v2.6 自动生成*
+`;
+  
+  return structure;
+}
+
+/**
+ * 生成完整文件列表
+ */
+function generateFileList() {
+  console.log('\n📋 正在生成完整文件列表...');
+  
+  const projectName = stats.project.name;
+  const timestamp = new Date().toLocaleString('zh-CN');
+  
+  let fileList = `╔════════════════════════════════════════════════════════╗
+║           ${projectName} - 完整文件列表                
+║           生成时间: ${timestamp}
+╚════════════════════════════════════════════════════════╝
+
+项目路径: ${stats.project.path}
+项目类型: ${stats.project.type}
+统计文件: ${stats.files.total} 个
+
+════════════════════════════════════════════════════════
+
+`;
+
+  // 按语言分组
+  const filesByLanguage = {};
+  stats.files.list.forEach(file => {
+    const lang = LANGUAGE_MAP[file.ext] || file.ext.slice(1).toUpperCase();
+    if (!filesByLanguage[lang]) {
+      filesByLanguage[lang] = [];
+    }
+    filesByLanguage[lang].push(file);
+  });
+
+  // 按文件数量排序
+  const sortedLanguages = Object.entries(filesByLanguage)
+    .sort((a, b) => b[1].length - a[1].length);
+
+  sortedLanguages.forEach(([lang, files]) => {
+    fileList += `\n${'='.repeat(60)}\n`;
+    fileList += `📚 ${lang} (${files.length} 个文件)\n`;
+    fileList += `${'='.repeat(60)}\n\n`;
+    
+    // 按文件路径排序
+    files.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+    
+    files.forEach((file, index) => {
+      fileList += `${(index + 1).toString().padStart(3)}. 📄 ${file.relativePath}\n`;
+      fileList += `     大小: ${formatSize(file.size).padEnd(10)} | 行数: ${file.lines.toString().padStart(6)}\n\n`;
+    });
+  });
+
+  fileList += `\n${'='.repeat(60)}\n`;
+  fileList += `📊 总计: ${stats.files.total} 个文件\n`;
+  fileList += `📦 总大小: ${formatSize(stats.text.totalChars)}\n`;
+  fileList += `📝 总行数: ${formatNumber(stats.code.totalLines)} 行\n`;
+  fileList += `${'='.repeat(60)}\n\n`;
+  fileList += `*由项目统计工具 v2.5 自动生成*\n`;
+
+  return fileList;
+}
+
+/**
+ * 生成 HTML 可视化报告
+/**
+ * 构建文件树的 JSON 数据结构（用于可视化）
+ */
+function buildFileTreeData(dir, rootPath = CONFIG.rootDir) {
+  const tree = {
+    name: path.basename(dir),
+    path: path.relative(rootPath, dir) || '.',
+    type: 'directory',
+    children: []
+  };
+  
+  try {
+    const items = fs.readdirSync(dir).sort();
+    
+    items.forEach(item => {
+      const fullPath = path.join(dir, item);
+      
+      if (shouldExclude(fullPath)) {
+        return;
+      }
+      
+      try {
+        const stat = fs.statSync(fullPath);
+        
+        if (stat.isDirectory()) {
+          const subTree = buildFileTreeData(fullPath, rootPath);
+          if (subTree.children.length > 0 || subTree.type === 'directory') {
+            tree.children.push(subTree);
+          }
+        } else {
+          const ext = path.extname(fullPath).toLowerCase();
+          if (isCodeFile(fullPath) || isDocFile(fullPath)) {
+            if (!isLibraryFile(fullPath)) {
+              tree.children.push({
+                name: item,
+                path: path.relative(rootPath, fullPath),
+                type: 'file',
+                ext: ext,
+                size: stat.size
+              });
+            }
+          }
+        }
+      } catch (error) {
+        // 忽略无权限文件
+      }
+    });
+  } catch (error) {
+    // 忽略无权限目录
+  }
+  
+  return tree;
+}
+
+/**
+ * 生成 HTML 可视化报告 v2.6 - 夜间炫酷版
+ */
+function generateHTMLReport() {
+  // 引入外部模板函数
+  const generateEnhancedHTML = require('./html-report-template.js');
+  
+  const timestamp = new Date().toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  
+  const fileTreeData = buildFileTreeData(CONFIG.rootDir);
+  
+  return generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize);
+}
+
+/**
+ * 旧版 HTML 报告生成函数（备份）
+ */
+function generateHTMLReportOld() {
+  const timestamp = new Date().toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  
+  // 准备图表数据
+  const languageData = Object.entries(stats.files.byLanguage)
+    .sort((a, b) => b[1] - a[1])
+    .map(([lang, count]) => ({ language: lang, count: count }));
+  
+  const codeDistribution = [
+    { type: '代码行', value: stats.code.codeLines, color: '#4CAF50' },
+    { type: '注释行', value: stats.code.commentLines, color: '#2196F3' },
+    { type: '空白行', value: stats.code.blankLines, color: '#9E9E9E' }
+  ];
+  
+  const tokenDistribution = [
+    { type: '中文', value: stats.tokens.breakdown.fromChinese, color: '#FF9800' },
+    { type: '英文', value: stats.tokens.breakdown.fromEnglish, color: '#9C27B0' },
+    { type: '代码', value: stats.tokens.breakdown.fromCode, color: '#00BCD4' }
+  ];
+
+  const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📊 ${stats.project.name} - 项目统计报告</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .header .subtitle {
+      font-size: 1.1em;
+      opacity: 0.9;
+    }
+    
+    .meta {
+      background: #f5f5f5;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    
+    .meta-item {
+      text-align: center;
+    }
+    
+    .meta-item .label {
+      color: #666;
+      font-size: 0.9em;
+      margin-bottom: 5px;
+    }
+    
+    .meta-item .value {
+      font-size: 1.3em;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .content {
+      padding: 40px;
+    }
+    
+    .section {
+      margin-bottom: 40px;
+    }
+    
+    .section-title {
+      font-size: 1.8em;
+      color: #333;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #667eea;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .stat-card .label {
+      font-size: 0.9em;
+      opacity: 0.9;
+      margin-bottom: 10px;
+    }
+    
+    .stat-card .value {
+      font-size: 2em;
+      font-weight: bold;
+    }
+    
+    .chart-container {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 30px;
+    }
+    
+    .chart-wrapper {
+      position: relative;
+      height: 300px;
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+    
+    th {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+    }
+    
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    tr:hover {
+      background: #f9f9f9;
+    }
+    
+    .footer {
+      background: #f5f5f5;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      font-size: 0.9em;
+    }
+    
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.8em;
+      }
+      
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 ${stats.project.name}</h1>
+      <div class="subtitle">项目统计可视化报告</div>
+    </div>
+    
+    <div class="meta">
+      <div class="meta-item">
+        <div class="label">生成时间</div>
+        <div class="value">${timestamp}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">项目类型</div>
+        <div class="value">${stats.project.type}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">工具版本</div>
+        <div class="value">v2.5</div>
+      </div>
+    </div>
+    
+    <div class="content">
+      <!-- 核心统计 -->
+      <div class="section">
+        <h2 class="section-title">📈 核心统计</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="label">统计文件</div>
+            <div class="value">${formatNumber(stats.files.total)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">总字符数</div>
+            <div class="value">${formatSize(stats.text.totalChars)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">代码行数</div>
+            <div class="value">${formatNumber(stats.code.totalLines)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">估算 Tokens</div>
+            <div class="value">${formatNumber(stats.tokens.estimated)}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 图表区域 -->
+      <div class="section">
+        <h2 class="section-title">📊 数据可视化</h2>
+        <div class="chart-grid">
+          <div class="chart-container">
+            <h3 style="margin-bottom: 15px; color: #333;">语言分布</h3>
+            <div class="chart-wrapper">
+              <canvas id="languageChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-container">
+            <h3 style="margin-bottom: 15px; color: #333;">代码组成</h3>
+            <div class="chart-wrapper">
+              <canvas id="codeChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-container">
+            <h3 style="margin-bottom: 15px; color: #333;">Token 分布</h3>
+            <div class="chart-wrapper">
+              <canvas id="tokenChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 详细数据表 -->
+      <div class="section">
+        <h2 class="section-title">📋 详细数据</h2>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>语言</th>
+                <th>文件数</th>
+                <th>占比</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${languageData.map(item => `
+                <tr>
+                  <td><strong>${item.language}</strong></td>
+                  <td>${formatNumber(item.count)}</td>
+                  <td>${((item.count / stats.files.total) * 100).toFixed(1)}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- 复杂度分析 -->
+      <div class="section">
+        <h2 class="section-title">🔍 复杂度分析</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="label">平均行长度</div>
+            <div class="value">${stats.complexity.avgLineLength} 字符</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">平均文件大小</div>
+            <div class="value">${formatSize(stats.complexity.avgFileSize)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">最大文件</div>
+            <div class="value" style="font-size: 1em;">${stats.files.largest.path}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">最大文件行数</div>
+            <div class="value">${formatNumber(stats.files.largest.lines)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      由项目统计工具 v2.5 自动生成 | ${timestamp}
+    </div>
+  </div>
+  
+  <script>
+    // 语言分布图
+    const languageCtx = document.getElementById('languageChart').getContext('2d');
+    new Chart(languageCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ${JSON.stringify(languageData.map(d => d.language))},
+        datasets: [{
+          data: ${JSON.stringify(languageData.map(d => d.count))},
+          backgroundColor: [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right'
+          }
+        }
+      }
+    });
+    
+    // 代码组成图
+    const codeCtx = document.getElementById('codeChart').getContext('2d');
+    new Chart(codeCtx, {
+      type: 'pie',
+      data: {
+        labels: ${JSON.stringify(codeDistribution.map(d => d.type))},
+        datasets: [{
+          data: ${JSON.stringify(codeDistribution.map(d => d.value))},
+          backgroundColor: ${JSON.stringify(codeDistribution.map(d => d.color))}
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    });
+    
+    // Token 分布图
+    const tokenCtx = document.getElementById('tokenChart').getContext('2d');
+    new Chart(tokenCtx, {
+      type: 'bar',
+      data: {
+        labels: ${JSON.stringify(tokenDistribution.map(d => d.type))},
+        datasets: [{
+          label: 'Tokens',
+          data: ${JSON.stringify(tokenDistribution.map(d => d.value))},
+          backgroundColor: ${JSON.stringify(tokenDistribution.map(d => d.color))}
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>`;
+
+  return html;
+}
+
 
 /**
  * 生成 Markdown 报告
@@ -478,8 +1125,8 @@ function generateMarkdownReport() {
   
   let markdown = `# 📊 项目统计报告
 
-> **生成时间**: ${timestamp}  
-> **工具版本**: v2.3  
+> **生成时间**: ${timestamp}
+> **工具版本**: v2.6
 > **智能过滤**: 已排除第三方库文件
 
 ---
@@ -583,7 +1230,7 @@ function generateMarkdownReport() {
 
 ---
 
-*由 [项目统计工具 v2.3](https://github.com) 自动生成*
+*由 [项目统计工具 v2.6](https://github.com) 自动生成*
 `;
 
   return markdown;
@@ -655,7 +1302,7 @@ function extractAllText(resultsDir) {
  */
 function printResults() {
   console.log('\n╔════════════════════════════════════════════════════════╗');
-  console.log('║              📊 项目统计结果 v2.3                      ║');
+  console.log('║              📊 项目统计结果 v2.6                      ║');
   console.log('╚════════════════════════════════════════════════════════╝\n');
   
   console.log('📁 项目信息');
@@ -770,15 +1417,44 @@ function main() {
   console.log(`   ✅ Markdown 报告: ${mdOutputPath}`);
   
   extractAllText(resultsDir);
+  // 生成 HTML 可视化报告
+  console.log('\n🎨 正在生成 HTML 可视化报告...');
+  const htmlReport = generateHTMLReport();
+  const htmlPath = path.join(resultsDir, `${projectName}_可视化报告_${timestamp}.html`);
+  fs.writeFileSync(htmlPath, htmlReport, 'utf8');
+  console.log(`   ✅ HTML 报告: ${htmlPath}`);
+  
+  
+  // 生成项目结构树
+  const projectStructure = generateProjectStructure();
+  const structurePath = path.join(resultsDir, `${projectName}_项目结构_${timestamp}.txt`);
+  fs.writeFileSync(structurePath, projectStructure, 'utf8');
+  console.log(`   ✅ 项目结构: ${structurePath}`);
+  
+  // 生成完整文件列表
+  const fileList = generateFileList();
+  const fileListPath = path.join(resultsDir, `${projectName}_文件列表_${timestamp}.txt`);
+  fs.writeFileSync(fileListPath, fileList, 'utf8');
+  console.log(`   ✅ 文件列表: ${fileListPath}`);
   
   const latestJsonPath = path.join(resultsDir, '最新_统计数据.json');
   const latestMdPath = path.join(resultsDir, '最新_统计报告.md');
+  const latestStructurePath = path.join(resultsDir, '最新_项目结构.txt');
+  const latestFileListPath = path.join(resultsDir, '最新_文件列表.txt');
+  const latestHtmlPath = path.join(resultsDir, '最新_可视化报告.html');
+  
   fs.writeFileSync(latestJsonPath, JSON.stringify(statsForJson, null, 2), 'utf8');
   fs.writeFileSync(latestMdPath, markdownReport, 'utf8');
+  fs.writeFileSync(latestStructurePath, projectStructure, 'utf8');
+  fs.writeFileSync(latestFileListPath, fileList, 'utf8');
+  fs.writeFileSync(latestHtmlPath, htmlReport, 'utf8');
   
   console.log(`\n📌 快速访问文件:`);
   console.log(`   📊 ${latestMdPath}`);
-  console.log(`   📝 ${path.join(resultsDir, '最新_完整提取.txt')}\n`);
+  console.log(`   📝 ${path.join(resultsDir, '最新_完整提取.txt')}`);
+  console.log(`   🌳 ${latestStructurePath}`);
+  console.log(`   📋 ${latestFileListPath}`);
+  console.log(`   🎨 ${latestHtmlPath} ⭐ 推荐在浏览器中打开！\n`);
   
   console.log(`✨ 统计完成！所有结果已保存到 results 文件夹\n`);
 }

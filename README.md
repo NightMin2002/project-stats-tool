@@ -1,12 +1,37 @@
-# 📊 项目统计工具 (Project Stats Tool)
+# 🌙 项目统计工具 (Project Stats Tool)
 
-[![Version](https://img.shields.io/badge/version-2.3-blue.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-2.6-blue.svg)](https://github.com)
 [![Node](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Language](https://img.shields.io/badge/language-JavaScript-yellow.svg)](https://www.javascript.com)
 
-> 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具  
+> 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具
 > 🚀 支持 40+ 种编程语言，自动排除第三方库，真实反映代码质量
+> 🌙 全新夜间主题 + 粒子动画 + 交互式可视化 - v2.6 终极版
+
+---
+
+## ✨ v2.6 新增功能 🆕
+
+### 🌙 夜间炫酷主题
+- 深邃宇宙黑背景，赛博朋克风格
+- 霓虹色彩系统（青绿/电蓝/紫罗兰）
+- 丝滑过渡动画，精致微交互
+
+### ✨ 粒子动画背景
+- 80个动态彩色粒子随机运动
+- 鼠标悬停互动，点击生成新粒子
+- 粒子间动态连线，科幻感十足
+
+### 🌳 交互式可视化文件树
+- 实时渲染项目结构
+- 可折叠展开，悬停高亮
+- 清晰的文件夹/文件图标区分
+
+### 🎨 视觉特效
+- 卡片悬停光晕效果
+- 渐变文字与发光边框
+- 扫光动画与呼吸动画
 
 ---
 
@@ -29,6 +54,9 @@
 - 📄 JSON 数据：结构化统计数据
 - 📋 Markdown 报告：美观的可读报告
 - 📝 完整提取：所有代码和文档的文字内容
+- 🌳 项目结构树：直观的目录树形图
+- 📋 文件列表：详细的文件清单
+- 🌙 **HTML 可视化报告**：夜间炫酷版，带粒子动画 🆕
 - 🕒 历史记录：带时间戳的版本管理
 - 📌 快速访问：自动生成"最新"版本文件
 
@@ -141,12 +169,18 @@ your-project/
 
 ```
 results/
-├── my-project_2025-11-03T12-30-45.json        # 详细数据
-├── my-project_2025-11-03T12-30-45.md          # Markdown 报告
-├── my-project_完整提取_2025-11-03T12-30-45.txt # 完整代码
-├── 最新_统计数据.json                          # 快速访问
-├── 最新_统计报告.md                            # 快速访问
-└── 最新_完整提取.txt                           # 快速访问
+├── my-project_2025-11-03T12-30-45.json            # JSON 数据
+├── my-project_2025-11-03T12-30-45.md              # Markdown 报告
+├── my-project_完整提取_2025-11-03T12-30-45.txt     # 完整代码
+├── my-project_项目结构_2025-11-03T12-30-45.txt     # 结构树
+├── my-project_文件列表_2025-11-03T12-30-45.txt     # 文件列表
+├── my-project_可视化报告_2025-11-03T12-30-45.html  # 🌙 HTML报告 🆕
+├── 最新_统计数据.json                              # 快速访问
+├── 最新_统计报告.md                                # 快速访问
+├── 最新_完整提取.txt                               # 快速访问
+├── 最新_项目结构.txt                               # 快速访问
+├── 最新_文件列表.txt                               # 快速访问
+└── 最新_可视化报告.html                            # 🌙 推荐！🆕
 ```
 
 ---
@@ -225,13 +259,15 @@ Markdown, Text, reStructuredText, AsciiDoc
 
 ```
 project-stats-tool/
-├── project-stats.js      # 主统计脚本 v2.3
-├── extract-text.js       # 独立文字提取工具
-├── 统计项目.bat          # Windows 启动器（完整统计）
-├── 提取文字.bat          # Windows 启动器（仅提取）
-├── 使用说明.txt          # 中文详细文档
-├── README.md             # 本文档
-└── results/              # 输出目录（自动创建）
+├── project-stats.js         # 主统计脚本 v2.6 🆕
+├── html-report-template.js  # HTML 模板生成器 🆕
+├── extract-text.js          # 独立文字提取工具
+├── 统计项目.bat             # Windows 启动器（完整统计）
+├── 提取文字.bat             # Windows 启动器（仅提取）
+├── 使用说明.txt             # 中文详细文档
+├── README.md                # 本文档
+└── results/                 # 输出目录（自动创建）
+    └── 最新_可视化报告.html # 🌙 夜间炫酷版 🆕
 ```
 
 ---
@@ -265,6 +301,27 @@ const CONFIG = {
 ---
 
 ## 📊 版本历史
+
+### v2.6 (2025-11) - 夜间炫酷版 🌙🆕
+- ✨ 全新深色夜间主题设计
+- ✨ 粒子背景动画效果（Particles.js）
+- ✨ 交互式可视化文件树
+- ✨ 霓虹风格视觉特效
+- ✨ 悬停光晕与扫光动画
+- 🎨 赛博朋克配色方案
+- 🎨 渐变文字与发光边框
+- 📱 响应式设计优化
+
+### v2.5 (2025-11) - 可视化增强
+- ✨ 生成交互式 HTML 可视化报告
+- ✨ Chart.js 图表展示
+- ✨ 美观的渐变紫色主题
+- 🎯 三种图表（语言/代码/Token）
+
+### v2.4 (2025-11) - 功能扩展
+- ✨ 项目结构树形图显示
+- ✨ 完整文件列表生成
+- ✨ 多文件格式输出
 
 ### v2.3 (2025-11) - 智能过滤
 - ✨ 智能识别并排除第三方库文件
@@ -355,6 +412,8 @@ const CONFIG = {
 
 **[⬆ 回到顶部](#-项目统计工具-project-stats-tool)**
 
-Made with ❤️ by Ω Code Agent
+Made with ❤️ and 🌙 by Ω Code Agent
+
+**[⭐ 立即体验夜间炫酷版可视化报告！](#)**
 
 </div>
