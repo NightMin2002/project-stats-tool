@@ -1,7 +1,7 @@
 // 这是一个临时文件，用于生成超炫酷的HTML报告模板
 // 将在 project-stats.js 中被引用
 
-module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize, libs = {}) {
+module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize, libs = {}, trendData = null) {
   const languageData = Object.entries(stats.files.byLanguage)
     .sort((a, b) => b[1] - a[1])
     .map(([lang, count]) => ({ language: lang, count: count }));
@@ -536,6 +536,40 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       </div>
     </div>
     
+    ${trendData && trendData.length > 1 ? `
+    <div class="section">
+      <h2 class="section-title">📈 历史趋势分析</h2>
+      <div class="chart-grid">
+        <div class="chart-container">
+          <h3>代码行数趋势</h3>
+          <div class="chart-wrapper">
+            <canvas id="trendLinesChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-container">
+          <h3>文件数量趋势</h3>
+          <div class="chart-wrapper">
+            <canvas id="trendFilesChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-container">
+          <h3>Token估算趋势</h3>
+          <div class="chart-wrapper">
+            <canvas id="trendTokensChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 20px; padding: 15px; background: rgba(0, 255, 136, 0.1); border-radius: 10px; border: 1px solid rgba(0, 255, 136, 0.3);">
+        <p style="color: #00ff88; font-weight: 600; margin-bottom: 8px;">💡 趋势分析说明</p>
+        <p style="color: #888; font-size: 0.9em; line-height: 1.6;">
+          • 显示最近 ${trendData.length} 次统计结果的变化趋势<br>
+          • 每次运行统计工具都会自动记录历史数据<br>
+          • 历史记录保存在 <code style="color: #00d4ff;">results/history.json</code>
+        </p>
+      </div>
+    </div>
+    ` : ''}
+    
     <div class="section">
       <h2 class="section-title">🌳 项目结构</h2>
       <div id="fileTree" class="file-tree"></div>
@@ -767,6 +801,120 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
         }
       }
     });
+    
+    // 趋势图表（如果有历史数据）
+    ${trendData && trendData.length > 1 ? `
+    const trendData = ${JSON.stringify(trendData)};
+    
+    // 趋势图通用配置
+    const trendChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: animationConfig,
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(context) {
+              const item = trendData.totalLines[context[0].dataIndex];
+              return item.tag ? \`\${item.label} [\${item.tag}]\` : item.label;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255, 255, 255, 0.1)' },
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString();
+            }
+          }
+        },
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.1)' },
+          ticks: {
+            maxRotation: 45,
+            minRotation: 45
+          }
+        }
+      }
+    };
+    
+    // 代码行数趋势图
+    new Chart(document.getElementById('trendLinesChart'), {
+      type: 'line',
+      data: {
+        labels: trendData.totalLines.map(d => d.label),
+        datasets: [{
+          label: '总行数',
+          data: trendData.totalLines.map(d => d.value),
+          borderColor: '#00ff88',
+          backgroundColor: 'rgba(0, 255, 136, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#00ff88',
+          pointBorderColor: '#0a0e27',
+          pointBorderWidth: 2
+        }]
+      },
+      options: trendChartOptions
+    });
+    
+    // 文件数量趋势图
+    new Chart(document.getElementById('trendFilesChart'), {
+      type: 'line',
+      data: {
+        labels: trendData.files.map(d => d.label),
+        datasets: [{
+          label: '文件数',
+          data: trendData.files.map(d => d.value),
+          borderColor: '#00d4ff',
+          backgroundColor: 'rgba(0, 212, 255, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#00d4ff',
+          pointBorderColor: '#0a0e27',
+          pointBorderWidth: 2
+        }]
+      },
+      options: trendChartOptions
+    });
+    
+    // Token 估算趋势图
+    new Chart(document.getElementById('trendTokensChart'), {
+      type: 'line',
+      data: {
+        labels: trendData.tokens.map(d => d.label),
+        datasets: [{
+          label: 'Tokens',
+          data: trendData.tokens.map(d => d.value),
+          borderColor: '#c770f0',
+          backgroundColor: 'rgba(199, 112, 240, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#c770f0',
+          pointBorderColor: '#0a0e27',
+          pointBorderWidth: 2
+        }]
+      },
+      options: trendChartOptions
+    });
+    ` : ''}
     
     // 文件树渲染（增强版 - 支持折叠/展开）
     let expandedFolders = new Set();

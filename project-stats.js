@@ -1,13 +1,18 @@
 /**
- * 项目统计工具 v2.7 - 全面优化版
+ * 项目统计工具 v2.9 - 文件组织优化版
  * 智能统计项目的文字数量、代码行数和 tokens 估算
  *
- * v2.7 更新内容:
- * - 修复HTML可视化报告的动画效果
- * - 增强文件树交互功能（折叠/展开）
- * - 智能区分可视化展示和统计分析的过滤规则
- * - 优化图表显示和响应式布局
- * - 提升大型项目的渲染性能
+ * v2.9 更新内容:
+ * - 📁 优化文件组织结构（每次统计创建独立时间戳文件夹）
+ * - 🕒 改进文件命名规则（简洁易读的文件名）
+ * - 🚀 新增"最新"快捷文件夹（快速访问最新结果）
+ * - 🎯 提升历史记录的可读性和易用性
+ *
+ * v2.8 更新内容:
+ * - ✨ 新增历史记录功能
+ * - 📈 新增对比分析功能
+ * - 📊 新增趋势数据生成
+ * - 🔄 自动对比上次统计结果
  *
  * 使用方法:
  *   node project-stats.js [项目路径]
@@ -19,6 +24,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const HistoryManager = require('./history-manager.js');
 
 // 获取命令行参数指定的目录，默认为上级目录（统计项目而非工具本身）
 const targetDir = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(process.cwd(), '..');
@@ -688,9 +694,9 @@ function buildFileTreeData(dir, rootPath = CONFIG.rootDir) {
 }
 
 /**
- * 生成 HTML 可视化报告 v2.7 - 全面优化版（内嵌本地库）
+ * 生成 HTML 可视化报告 v2.8 - 对比分析版（内嵌本地库）
  */
-function generateHTMLReport() {
+function generateHTMLReport(historyManager) {
   // 读取本地库文件
   const chartJs = fs.existsSync(path.join(__dirname, 'lib/chart.min.js'))
     ? fs.readFileSync(path.join(__dirname, 'lib/chart.min.js'), 'utf8')
@@ -713,10 +719,21 @@ function generateHTMLReport() {
   
   const fileTreeData = buildFileTreeData(CONFIG.rootDir);
   
+  // 生成趋势数据
+  let trendData = null;
+  if (historyManager && historyManager.getRecordCount() >= 2) {
+    trendData = {
+      totalLines: historyManager.generateTrendData('totalLines', 10),
+      files: historyManager.generateTrendData('files', 10),
+      tokens: historyManager.generateTrendData('tokens', 10),
+      codeLines: historyManager.generateTrendData('codeLines', 10)
+    };
+  }
+  
   return generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize, {
     chartJs,
     particlesJs
-  });
+  }, trendData);
 }
 
 /**
@@ -1284,11 +1301,10 @@ function generateMarkdownReport() {
 function extractAllText(resultsDir) {
   console.log('\n📝 正在提取所有文字内容...');
   
-  const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
   const projectName = stats.project.name;
   
   let fullText = `╔════════════════════════════════════════════════════════╗
-║           ${projectName} - 完整文字提取                
+║           ${projectName} - 完整文字提取
 ║           生成时间: ${new Date().toLocaleString('zh-CN')}
 ╚════════════════════════════════════════════════════════╝
 
@@ -1328,13 +1344,10 @@ function extractAllText(resultsDir) {
       });
     });
 
-  const fullTextPath = path.join(resultsDir, `${projectName}_完整提取_${timestamp}.txt`);
+  const fullTextPath = path.join(resultsDir, '完整提取.txt');
   fs.writeFileSync(fullTextPath, fullText, 'utf8');
-  console.log(`   ✅ 完整文字: ${fullTextPath}`);
+  console.log(`   ✅ 完整文字: 完整提取.txt`);
   console.log(`   📊 文件大小: ${formatSize(Buffer.byteLength(fullText, 'utf8'))}`);
-  
-  const latestFullTextPath = path.join(resultsDir, '最新_完整提取.txt');
-  fs.writeFileSync(latestFullTextPath, fullText, 'utf8');
   
   return fullTextPath;
 }
@@ -1429,17 +1442,45 @@ function main() {
   calculateComplexity();
   calculateTokens();
   
-  printResults();
-  
+  // 初始化历史管理器
   const resultsDir = path.join(__dirname, 'results');
   if (!fs.existsSync(resultsDir)) {
     fs.mkdirSync(resultsDir, { recursive: true });
   }
   
-  const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+  const historyManager = new HistoryManager(resultsDir);
+  
+  // 获取上次统计结果进行对比
+  const previousRecord = historyManager.getPreviousRecord();
+  const comparison = historyManager.compare(stats, previousRecord);
+  
+  printResults();
+  
+  // 打印对比结果
+  if (!comparison.isFirstRun) {
+    printComparison(comparison);
+  }
+  
+  // 生成时间戳和文件夹名称
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/:/g, '-').split('.')[0];
+  const folderTimestamp = now.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }).replace(/\//g, '-').replace(/:/g, '-').replace(/ /g, '_');
+  
   const projectName = stats.project.name;
   
+  // 创建本次统计的专属文件夹
+  const currentResultDir = path.join(resultsDir, folderTimestamp);
+  fs.mkdirSync(currentResultDir, { recursive: true });
+  
   console.log('📦 正在保存结果文件...\n');
+  console.log(`📁 本次结果文件夹: ${folderTimestamp}\n`);
   
   const statsForJson = JSON.parse(JSON.stringify(stats));
   statsForJson.files.list = statsForJson.files.list.map(f => ({
@@ -1449,56 +1490,126 @@ function main() {
     ext: f.ext
   }));
   
-  const jsonOutputPath = path.join(resultsDir, `${projectName}_${timestamp}.json`);
+  // 保存到时间戳文件夹（使用简洁文件名）
+  const jsonOutputPath = path.join(currentResultDir, '统计数据.json');
   fs.writeFileSync(jsonOutputPath, JSON.stringify(statsForJson, null, 2), 'utf8');
-  console.log(`   ✅ JSON 数据: ${jsonOutputPath}`);
+  console.log(`   ✅ JSON 数据: 统计数据.json`);
   
   const markdownReport = generateMarkdownReport();
-  const mdOutputPath = path.join(resultsDir, `${projectName}_${timestamp}.md`);
+  const mdOutputPath = path.join(currentResultDir, '统计报告.md');
   fs.writeFileSync(mdOutputPath, markdownReport, 'utf8');
-  console.log(`   ✅ Markdown 报告: ${mdOutputPath}`);
+  console.log(`   ✅ Markdown 报告: 统计报告.md`);
   
-  extractAllText(resultsDir);
-  // 生成 HTML 可视化报告
+  // 提取文字到时间戳文件夹
+  extractAllText(currentResultDir);
+  
+  // 生成 HTML 可视化报告（传入历史管理器以生成趋势图）
   console.log('\n🎨 正在生成 HTML 可视化报告...');
-  const htmlReport = generateHTMLReport();
-  const htmlPath = path.join(resultsDir, `${projectName}_可视化报告_${timestamp}.html`);
+  const htmlReport = generateHTMLReport(historyManager);
+  const htmlPath = path.join(currentResultDir, '可视化报告.html');
   fs.writeFileSync(htmlPath, htmlReport, 'utf8');
-  console.log(`   ✅ HTML 报告: ${htmlPath}`);
-  
+  console.log(`   ✅ HTML 报告: 可视化报告.html`);
+  if (historyManager.getRecordCount() >= 2) {
+    console.log(`   📈 包含历史趋势图 (${historyManager.getRecordCount()} 条记录)`);
+  }
   
   // 生成项目结构树
   const projectStructure = generateProjectStructure();
-  const structurePath = path.join(resultsDir, `${projectName}_项目结构_${timestamp}.txt`);
+  const structurePath = path.join(currentResultDir, '项目结构.txt');
   fs.writeFileSync(structurePath, projectStructure, 'utf8');
-  console.log(`   ✅ 项目结构: ${structurePath}`);
+  console.log(`   ✅ 项目结构: 项目结构.txt`);
   
   // 生成完整文件列表
   const fileList = generateFileList();
-  const fileListPath = path.join(resultsDir, `${projectName}_文件列表_${timestamp}.txt`);
+  const fileListPath = path.join(currentResultDir, '文件列表.txt');
   fs.writeFileSync(fileListPath, fileList, 'utf8');
-  console.log(`   ✅ 文件列表: ${fileListPath}`);
+  console.log(`   ✅ 文件列表: 文件列表.txt`);
   
-  const latestJsonPath = path.join(resultsDir, '最新_统计数据.json');
-  const latestMdPath = path.join(resultsDir, '最新_统计报告.md');
-  const latestStructurePath = path.join(resultsDir, '最新_项目结构.txt');
-  const latestFileListPath = path.join(resultsDir, '最新_文件列表.txt');
-  const latestHtmlPath = path.join(resultsDir, '最新_可视化报告.html');
+  // 创建或更新"最新"文件夹
+  const latestDir = path.join(resultsDir, '最新');
+  if (fs.existsSync(latestDir)) {
+    // 删除旧的最新文件夹中的文件
+    const latestFiles = fs.readdirSync(latestDir);
+    latestFiles.forEach(file => {
+      const filePath = path.join(latestDir, file);
+      if (fs.statSync(filePath).isFile()) {
+        fs.unlinkSync(filePath);
+      }
+    });
+  } else {
+    fs.mkdirSync(latestDir, { recursive: true });
+  }
   
-  fs.writeFileSync(latestJsonPath, JSON.stringify(statsForJson, null, 2), 'utf8');
-  fs.writeFileSync(latestMdPath, markdownReport, 'utf8');
-  fs.writeFileSync(latestStructurePath, projectStructure, 'utf8');
-  fs.writeFileSync(latestFileListPath, fileList, 'utf8');
-  fs.writeFileSync(latestHtmlPath, htmlReport, 'utf8');
+  // 复制所有文件到"最新"文件夹
+  fs.writeFileSync(path.join(latestDir, '统计数据.json'), JSON.stringify(statsForJson, null, 2), 'utf8');
+  fs.writeFileSync(path.join(latestDir, '统计报告.md'), markdownReport, 'utf8');
+  fs.writeFileSync(path.join(latestDir, '项目结构.txt'), projectStructure, 'utf8');
+  fs.writeFileSync(path.join(latestDir, '文件列表.txt'), fileList, 'utf8');
+  fs.writeFileSync(path.join(latestDir, '可视化报告.html'), htmlReport, 'utf8');
   
-  console.log(`\n📌 快速访问文件:`);
-  console.log(`   📊 ${latestMdPath}`);
-  console.log(`   📝 ${path.join(resultsDir, '最新_完整提取.txt')}`);
-  console.log(`   🌳 ${latestStructurePath}`);
-  console.log(`   📋 ${latestFileListPath}`);
-  console.log(`   🎨 ${latestHtmlPath} ⭐ 推荐在浏览器中打开！\n`);
+  // 复制完整提取文件
+  if (fs.existsSync(path.join(currentResultDir, '完整提取.txt'))) {
+    fs.copyFileSync(
+      path.join(currentResultDir, '完整提取.txt'),
+      path.join(latestDir, '完整提取.txt')
+    );
+  }
+  
+  // 保存当前统计到历史记录
+  const savedRecord = historyManager.saveRecord(stats);
+  if (savedRecord) {
+    console.log(`\n💾 历史记录已保存 (ID: ${savedRecord.id})`);
+    console.log(`   📊 历史记录总数: ${historyManager.getRecordCount()} 条`);
+    console.log(`   📁 历史文件: ${path.join(resultsDir, 'history.json')}`);
+  }
+  
+  console.log(`\n📌 快速访问:`);
+  console.log(`   📂 本次结果: results/${folderTimestamp}/`);
+  console.log(`   📂 最新结果: results/最新/`);
+  console.log(`   🎨 可视化报告: results/最新/可视化报告.html ⭐ 推荐在浏览器中打开！\n`);
   
   console.log(`✨ 统计完成！所有结果已保存到 results 文件夹\n`);
+}
+
+/**
+ * 打印对比结果
+ */
+function printComparison(comparison) {
+  console.log('\n╔════════════════════════════════════════════════════════╗');
+  console.log('║              📈 对比分析结果                           ║');
+  console.log('╚════════════════════════════════════════════════════════╝\n');
+  
+  const prevTime = new Date(comparison.previousTime).toLocaleString('zh-CN');
+  console.log(`🕒 对比基准: ${prevTime}`);
+  if (comparison.previousTag) {
+    console.log(`🏷️  版本标签: ${comparison.previousTag}`);
+  }
+  console.log('─────────────────────────────────────────────────────────\n');
+  
+  const c = comparison.comparison;
+  
+  console.log('📊 核心指标变化:\n');
+  printChangeItem('文件数量', c.files);
+  printChangeItem('总字符数', c.totalChars);
+  printChangeItem('总行数', c.totalLines);
+  printChangeItem('代码行数', c.codeLines);
+  printChangeItem('注释行数', c.commentLines);
+  printChangeItem('估算Tokens', c.tokens);
+  
+  console.log('\n─────────────────────────────────────────────────────────');
+  console.log('💡 提示: 历史趋势图可在 HTML 可视化报告中查看');
+  console.log('─────────────────────────────────────────────────────────\n');
+}
+
+/**
+ * 打印单个变化项
+ */
+function printChangeItem(label, change) {
+  const icon = change.trend === 'up' ? '📈' : change.trend === 'down' ? '📉' : '➡️';
+  const color = change.trend === 'up' ? '\x1b[32m' : change.trend === 'down' ? '\x1b[31m' : '\x1b[33m';
+  const reset = '\x1b[0m';
+  
+  console.log(`   ${icon} ${label.padEnd(12)} ${formatNumber(change.old).padStart(10)} → ${formatNumber(change.new).padStart(10)}   ${color}${change.diffFormatted.padStart(8)} (${change.rateFormatted})${reset}`);
 }
 
 main();
