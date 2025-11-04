@@ -1,18 +1,11 @@
 /**
- * 项目统计工具 v2.9 - 文件组织优化版
+ * 项目统计工具 v2.10.0
  * 智能统计项目的文字数量、代码行数和 tokens 估算
  *
- * v2.9 更新内容:
- * - 📁 优化文件组织结构（每次统计创建独立时间戳文件夹）
- * - 🕒 改进文件命名规则（简洁易读的文件名）
- * - 🚀 新增"最新"快捷文件夹（快速访问最新结果）
- * - 🎯 提升历史记录的可读性和易用性
- *
- * v2.8 更新内容:
- * - ✨ 新增历史记录功能
- * - 📈 新增对比分析功能
- * - 📊 新增趋势数据生成
- * - 🔄 自动对比上次统计结果
+ * 🆕 v2.10.0 新增功能:
+ * - 按语言的详细统计（代码行、字符数、文件数等）
+ * - HTML报告增强：语言级别的可视化图表和数据卡片
+ * - 更直观的数据展示，支持快速了解各语言占比
  *
  * 使用方法:
  *   node project-stats.js [项目路径]
@@ -20,6 +13,8 @@
  * 示例:
  *   node project-stats.js              # 统计当前目录
  *   node project-stats.js ../my-app    # 统计指定项目
+ *
+ * 详细更新日志请查看: CHANGELOG.md
  */
 
 const fs = require('fs');
@@ -154,7 +149,23 @@ const stats = {
     avgLineLength: 0,
     avgFileSize: 0,
     longestLine: { file: '', length: 0, lineNum: 0 }
-  }
+  },
+  /**
+   * 🆕 v2.10.0 新增：按语言的详细统计
+   * 结构: {
+   *   "JavaScript": {
+   *     files: 5,           // 该语言的文件数
+   *     totalLines: 1234,   // 总行数
+   *     codeLines: 890,     // 代码行数
+   *     commentLines: 234,  // 注释行数
+   *     blankLines: 110,    // 空白行数
+   *     totalChars: 45678,  // 总字符数
+   *     chineseChars: 123,  // 中文字符数
+   *     englishWords: 456   // 英文单词数
+   *   }
+   * }
+   */
+  languageStats: {}
 };
 
 // 语言映射
@@ -357,6 +368,20 @@ function analyzeFile(filePath) {
     const language = LANGUAGE_MAP[ext] || ext.slice(1).toUpperCase();
     stats.files.byLanguage[language] = (stats.files.byLanguage[language] || 0) + 1;
     
+    // 🆕 v2.10.0: 初始化语言详细统计数据结构
+    if (!stats.languageStats[language]) {
+      stats.languageStats[language] = {
+        files: 0,           // 文件数量
+        totalLines: 0,      // 总行数（包括代码、注释、空白）
+        codeLines: 0,       // 纯代码行数
+        commentLines: 0,    // 注释行数
+        blankLines: 0,      // 空白行数
+        totalChars: 0,      // 总字符数
+        chineseChars: 0,    // 中文字符数
+        englishWords: 0     // 英文单词数
+      };
+    }
+    
     stats.files.list.push({
       path: filePath,
       relativePath: path.relative(CONFIG.rootDir, filePath),
@@ -374,22 +399,36 @@ function analyzeFile(filePath) {
       };
     }
     
-    stats.text.chineseChars += countChineseChars(content);
-    stats.text.englishWords += countEnglishWords(content);
+    const chineseChars = countChineseChars(content);
+    const englishWords = countEnglishWords(content);
+    
+    stats.text.chineseChars += chineseChars;
+    stats.text.englishWords += englishWords;
     stats.text.totalChars += fileSize;
+    
+    // 🆕 v2.10.0: 累加语言级别的基础统计
+    stats.languageStats[language].files++;
+    stats.languageStats[language].totalChars += fileSize;
+    stats.languageStats[language].chineseChars += chineseChars;
+    stats.languageStats[language].englishWords += englishWords;
     
     if (isCodeFile(filePath)) {
       stats.text.codeChars += fileSize;
       stats.code.totalLines += lines.length;
+      stats.languageStats[language].totalLines += lines.length;
       
+      // 🆕 v2.10.0: 逐行分析代码类型并更新语言级别统计
       lines.forEach((line, index) => {
         const lineType = analyzeCodeLine(line, ext);
         if (lineType === 'blank') {
           stats.code.blankLines++;
+          stats.languageStats[language].blankLines++;
         } else if (lineType === 'comment') {
           stats.code.commentLines++;
+          stats.languageStats[language].commentLines++;
         } else {
           stats.code.codeLines++;
+          stats.languageStats[language].codeLines++;
         }
         
         if (line.length > stats.complexity.longestLine.length) {
@@ -403,7 +442,7 @@ function analyzeFile(filePath) {
     }
     
   } catch (error) {
-    // 忽略读取错误
+    // 静默忽略文件读取错误（可能是编码问题或权限不足）
   }
 }
 
@@ -439,7 +478,7 @@ function walkDirectory(dir) {
       }
     });
   } catch (error) {
-    // 忽略无权限目录
+    // 静默忽略无权限目录错误
   }
 }
 
@@ -517,11 +556,11 @@ function buildDirectoryTree(dir, prefix = '', isLast = true) {
           tree += buildDirectoryTree(fullPath, prefix + extension, isLastItem);
         }
       } catch (error) {
-        // 忽略无权限文件
+        // 静默忽略无权限文件错误
       }
     });
   } catch (error) {
-    // 忽略无权限目录
+    // 静默忽略无权限目录错误
   }
   
   return tree;
@@ -557,7 +596,7 @@ function generateProjectStructure() {
    • 总目录数: (已包含在树中)
    • 排除文件: ${formatNumber(stats.files.excluded.libraries)} 个第三方库
 
-*由项目统计工具 v2.6 自动生成*
+*由项目统计工具 v2.10.0 自动生成*
 `;
   
   return structure;
@@ -618,7 +657,7 @@ function generateFileList() {
   fileList += `📦 总大小: ${formatSize(stats.text.totalChars)}\n`;
   fileList += `📝 总行数: ${formatNumber(stats.code.totalLines)} 行\n`;
   fileList += `${'='.repeat(60)}\n\n`;
-  fileList += `*由项目统计工具 v2.5 自动生成*\n`;
+  fileList += `*由项目统计工具 v2.10.0 自动生成*\n`;
 
   return fileList;
 }
@@ -978,7 +1017,7 @@ function generateHTMLReportOld() {
       </div>
       <div class="meta-item">
         <div class="label">工具版本</div>
-        <div class="value">v2.5</div>
+        <div class="value">v2.9.1</div>
       </div>
     </div>
     
@@ -1081,7 +1120,7 @@ function generateHTMLReportOld() {
     </div>
     
     <div class="footer">
-      由项目统计工具 v2.5 自动生成 | ${timestamp}
+      由项目统计工具 v2.9.1 自动生成 | ${timestamp}
     </div>
   </div>
   
@@ -1184,7 +1223,7 @@ function generateMarkdownReport() {
   let markdown = `# 📊 项目统计报告
 
 > **生成时间**: ${timestamp}
-> **工具版本**: v2.7
+> **工具版本**: v2.9.1
 > **智能过滤**: 已排除第三方库文件（统计分析）
 > **可视化**: 完整项目结构展示（包括第三方库）
 
@@ -1289,7 +1328,7 @@ function generateMarkdownReport() {
 
 ---
 
-*由 [项目统计工具 v2.7](https://github.com) 自动生成*
+*由 [项目统计工具 v2.9.1](https://github.com) 自动生成*
 `;
 
   return markdown;
@@ -1357,7 +1396,7 @@ function extractAllText(resultsDir) {
  */
 function printResults() {
   console.log('\n╔════════════════════════════════════════════════════════╗');
-  console.log('║              📊 项目统计结果 v2.7                      ║');
+  console.log('║              📊 项目统计结果 v2.10.0                   ║');
   console.log('╚════════════════════════════════════════════════════════╝\n');
   
   console.log('📁 项目信息');
@@ -1450,7 +1489,10 @@ function main() {
   
   const historyManager = new HistoryManager(resultsDir);
   
-  // 获取上次统计结果进行对比
+  // 🔑 关键优化：先保存本次记录到历史（这样第2次运行时就能看到趋势图）
+  const currentRecordForComparison = historyManager.saveRecord(stats);
+  
+  // 获取上次统计结果进行对比（现在getPreviousRecord会返回倒数第二条，即真正的"上次"）
   const previousRecord = historyManager.getPreviousRecord();
   const comparison = historyManager.compare(stats, previousRecord);
   
@@ -1458,7 +1500,7 @@ function main() {
   
   // 打印对比结果
   if (!comparison.isFirstRun) {
-    printComparison(comparison);
+    printComparison(comparison, historyManager);
   }
   
   // 生成时间戳和文件夹名称
@@ -1555,10 +1597,9 @@ function main() {
     );
   }
   
-  // 保存当前统计到历史记录
-  const savedRecord = historyManager.saveRecord(stats);
-  if (savedRecord) {
-    console.log(`\n💾 历史记录已保存 (ID: ${savedRecord.id})`);
+  // 历史记录已在前面保存（第1444行），这里只打印确认信息
+  if (currentRecordForComparison) {
+    console.log(`\n💾 历史记录已保存 (ID: ${currentRecordForComparison.id})`);
     console.log(`   📊 历史记录总数: ${historyManager.getRecordCount()} 条`);
     console.log(`   📁 历史文件: ${path.join(resultsDir, 'history.json')}`);
   }
@@ -1574,7 +1615,7 @@ function main() {
 /**
  * 打印对比结果
  */
-function printComparison(comparison) {
+function printComparison(comparison, historyManager) {
   console.log('\n╔════════════════════════════════════════════════════════╗');
   console.log('║              📈 对比分析结果                           ║');
   console.log('╚════════════════════════════════════════════════════════╝\n');
@@ -1597,7 +1638,13 @@ function printComparison(comparison) {
   printChangeItem('估算Tokens', c.tokens);
   
   console.log('\n─────────────────────────────────────────────────────────');
-  console.log('💡 提示: 历史趋势图可在 HTML 可视化报告中查看');
+  if (historyManager && historyManager.getRecordCount() >= 2) {
+    console.log('💡 提示: 历史趋势图已包含在 HTML 可视化报告中');
+    console.log(`   📈 当前历史记录: ${historyManager.getRecordCount()} 条`);
+  } else {
+    console.log('💡 提示: 再次运行后将生成历史趋势图');
+    console.log('   📈 需要至少 2 条历史记录才能显示趋势');
+  }
   console.log('─────────────────────────────────────────────────────────\n');
 }
 

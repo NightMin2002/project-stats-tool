@@ -1,5 +1,5 @@
 /**
- * 历史记录查看器 v1.0
+ * 历史记录查看器 v1.1
  * 用于查看、管理和导出历史统计数据
  */
 
@@ -8,7 +8,10 @@ const path = require('path');
 
 const historyFile = path.join(__dirname, 'results', 'history.json');
 
-// 加载历史数据
+/**
+ * 加载历史数据
+ * @returns {Object|null} 历史数据对象，失败时返回 null
+ */
 function loadHistory() {
   if (!fs.existsSync(historyFile)) {
     console.log('❌ 未找到历史记录文件');
@@ -21,6 +24,7 @@ function loadHistory() {
     return JSON.parse(data);
   } catch (error) {
     console.error('❌ 读取历史文件失败:', error.message);
+    console.error('   文件可能已损坏，请检查 results/history.json');
     return null;
   }
 }

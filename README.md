@@ -1,6 +1,6 @@
 # 🌙 项目统计工具 (Project Stats Tool)
 
-[![Version](https://img.shields.io/badge/version-2.9-blue.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-2.9.1-blue.svg)](https://github.com)
 [![Node](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -204,16 +204,18 @@ project-stats-tool/
 
 ## 📊 版本信息
 
-### 当前版本：v2.9 (2025-11-03) ✨
+### 当前版本：v2.9.1 (2025-11-03) 🔧
 
 **核心更新**：
-- 📁 时间戳文件夹组织 - 每次统计独立文件夹
-- 🏷️ 简洁文件命名 - 统一的文件名规范
-- 🚀 "最新"快捷访问 - 快速查看最新结果
+- 🔧 代码质量优化 - 修复潜在问题，提升健壮性
+- 📝 统一版本标识 - 所有文件版本号统一
+- ✨ 改进错误处理 - 更友好的错误提示
+- 🎯 提升可维护性 - 规范注释和代码风格
 
 **[查看完整更新日志 →](CHANGELOG.md)**
 
 ### 主要版本
+- **v2.9.1** - 代码质量优化 ⭐ 最新
 - **v2.9** - 文件组织优化
 - **v2.8** - 历史对比分析
 - **v2.7** - 全面优化

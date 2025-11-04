@@ -1,6 +1,22 @@
-// 这是一个临时文件，用于生成超炫酷的HTML报告模板
-// 将在 project-stats.js 中被引用
-
+/**
+ * HTML 报告模板生成器 v2.10.0
+ *
+ * 生成 Night Theme 风格的项目统计可视化报告
+ *
+ * 🆕 v2.10.0 新增:
+ * - 语言级别的详细统计卡片（显示代码行、注释、文件数等）
+ * - 语言代码量对比的堆叠柱状图
+ * - 完整的语言详细统计表格（包含代码率等指标）
+ *
+ * @param {Object} stats - 完整的统计数据对象
+ * @param {string} timestamp - 生成时间戳
+ * @param {Object} fileTreeData - 文件树数据
+ * @param {Function} formatNumber - 数字格式化函数
+ * @param {Function} formatSize - 文件大小格式化函数
+ * @param {Object} libs - 内嵌的第三方库（Chart.js, Particles.js）
+ * @param {Object|null} trendData - 历史趋势数据（可选）
+ * @returns {string} 完整的 HTML 报告字符串
+ */
 module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize, libs = {}, trendData = null) {
   const languageData = Object.entries(stats.files.byLanguage)
     .sort((a, b) => b[1] - a[1])
@@ -486,7 +502,7 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       </div>
       <div class="meta-item">
         <div class="label">工具版本</div>
-        <div class="value">v2.7</div>
+        <div class="value">v2.10.0</div>
       </div>
     </div>
     
@@ -494,29 +510,67 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       <h2 class="section-title">📈 核心统计</h2>
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="label">统计文件</div>
+          <div class="label">📁 统计文件</div>
           <div class="value">${formatNumber(stats.files.total)}</div>
         </div>
         <div class="stat-card">
-          <div class="label">总字符数</div>
-          <div class="value">${formatSize(stats.text.totalChars)}</div>
+          <div class="label">📝 总字符数</div>
+          <div class="value">${formatNumber(stats.text.totalChars)}</div>
+          <div class="label" style="margin-top: 8px; font-size: 0.8em;">${formatSize(stats.text.totalChars)}</div>
         </div>
         <div class="stat-card">
-          <div class="label">代码行数</div>
+          <div class="label">📊 代码行数</div>
           <div class="value">${formatNumber(stats.code.totalLines)}</div>
         </div>
         <div class="stat-card">
-          <div class="label">估算 Tokens</div>
+          <div class="label">🎯 估算 Tokens</div>
           <div class="value">${formatNumber(stats.tokens.estimated)}</div>
         </div>
       </div>
+      
+      ${Object.keys(stats.languageStats || {}).length > 0 ? `
+      <div style="margin-top: 30px;">
+        <h3 style="color: #00d4ff; font-size: 1.5em; margin-bottom: 20px; padding-left: 10px; border-left: 4px solid #00d4ff;">
+          🔥 主要语言详情
+        </h3>
+        <div class="stats-grid">
+          ${Object.entries(stats.languageStats)
+            .sort((a, b) => b[1].totalLines - a[1].totalLines)
+            .slice(0, 6)
+            .map(([lang, langStats]) => `
+              <div class="stat-card" style="background: linear-gradient(135deg, #1a0f3a 0%, #0f1729 100%);">
+                <div class="label" style="color: #c770f0; font-size: 1.1em; font-weight: 700;">${lang}</div>
+                <div class="value" style="font-size: 2em;">${formatNumber(langStats.totalLines)}</div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0, 212, 255, 0.2); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85em;">
+                  <div>
+                    <div style="color: #888;">文件</div>
+                    <div style="color: #00ff88; font-weight: 600;">${langStats.files}</div>
+                  </div>
+                  <div>
+                    <div style="color: #888;">大小</div>
+                    <div style="color: #00d4ff; font-weight: 600;">${formatSize(langStats.totalChars)}</div>
+                  </div>
+                  <div>
+                    <div style="color: #888;">代码</div>
+                    <div style="color: #00ff88; font-weight: 600;">${formatNumber(langStats.codeLines)}</div>
+                  </div>
+                  <div>
+                    <div style="color: #888;">注释</div>
+                    <div style="color: #00d4ff; font-weight: 600;">${formatNumber(langStats.commentLines)}</div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+      ` : ''}
     </div>
     
     <div class="section">
       <h2 class="section-title">📊 数据可视化</h2>
       <div class="chart-grid">
         <div class="chart-container">
-          <h3>语言分布</h3>
+          <h3>语言分布（文件数）</h3>
           <div class="chart-wrapper">
             <canvas id="languageChart"></canvas>
           </div>
@@ -536,7 +590,26 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       </div>
     </div>
     
-    ${trendData && trendData.length > 1 ? `
+    ${Object.keys(stats.languageStats || {}).length > 0 ? `
+    <div class="section">
+      <h2 class="section-title">🔥 语言代码量对比</h2>
+      <div class="chart-container" style="padding: 30px;">
+        <div class="chart-wrapper" style="height: 400px;">
+          <canvas id="languageCodeChart"></canvas>
+        </div>
+      </div>
+      <div style="margin-top: 20px; padding: 15px; background: rgba(0, 255, 136, 0.1); border-radius: 10px; border: 1px solid rgba(0, 255, 136, 0.3);">
+        <p style="color: #00ff88; font-weight: 600; margin-bottom: 8px;">📊 图表说明</p>
+        <p style="color: #888; font-size: 0.9em; line-height: 1.6;">
+          • 此图展示各编程语言的代码量分布<br>
+          • 深色部分为代码行，浅色为注释行，灰色为空白行<br>
+          • 帮助快速识别项目的主要语言构成
+        </p>
+      </div>
+    </div>
+    ` : ''}
+    
+    ${trendData && trendData.totalLines && trendData.totalLines.length > 1 ? `
     <div class="section">
       <h2 class="section-title">📈 历史趋势分析</h2>
       <div class="chart-grid">
@@ -576,25 +649,54 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
     </div>
     
     <div class="section">
-      <h2 class="section-title">📋 详细数据</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>语言</th>
-            <th>文件数</th>
-            <th>占比</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${languageData.map(item => `
+      <h2 class="section-title">📋 语言详细统计</h2>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
             <tr>
-              <td><strong>${item.language}</strong></td>
-              <td>${formatNumber(item.count)}</td>
-              <td>${((item.count / stats.files.total) * 100).toFixed(1)}%</td>
+              <th>语言</th>
+              <th>文件数</th>
+              <th>总字符</th>
+              <th>总行数</th>
+              <th>代码行</th>
+              <th>注释行</th>
+              <th>空白行</th>
+              <th>代码率</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${Object.entries(stats.languageStats || {})
+              .sort((a, b) => b[1].totalLines - a[1].totalLines)
+              .map(([lang, langStats]) => {
+                const codeRate = langStats.totalLines > 0
+                  ? ((langStats.codeLines / langStats.totalLines) * 100).toFixed(1)
+                  : '0.0';
+                return `
+                  <tr>
+                    <td><strong>${lang}</strong></td>
+                    <td>${formatNumber(langStats.files)}</td>
+                    <td>${formatSize(langStats.totalChars)}</td>
+                    <td>${formatNumber(langStats.totalLines)}</td>
+                    <td style="color: #00ff88;">${formatNumber(langStats.codeLines)}</td>
+                    <td style="color: #00d4ff;">${formatNumber(langStats.commentLines)}</td>
+                    <td style="color: #888;">${formatNumber(langStats.blankLines)}</td>
+                    <td><span style="color: ${codeRate > 70 ? '#00ff88' : codeRate > 50 ? '#ffd700' : '#ff6b9d'};">${codeRate}%</span></td>
+                  </tr>
+                `;
+              }).join('')}
+          </tbody>
+        </table>
+      </div>
+      
+      <div style="margin-top: 30px; padding: 15px; background: rgba(199, 112, 240, 0.1); border-radius: 10px; border: 1px solid rgba(199, 112, 240, 0.3);">
+        <p style="color: #c770f0; font-weight: 600; margin-bottom: 8px;">💡 数据说明</p>
+        <p style="color: #888; font-size: 0.9em; line-height: 1.6;">
+          • <strong style="color: #00ff88;">代码行</strong>: 实际包含代码的行数<br>
+          • <strong style="color: #00d4ff;">注释行</strong>: 代码注释和文档<br>
+          • <strong style="color: #888;">空白行</strong>: 提升可读性的空行<br>
+          • <strong>代码率</strong>: 代码行占总行数的百分比（绿色>70%，黄色>50%，粉色≤50%）
+        </p>
+      </div>
     </div>
     
     <div class="section">
@@ -620,13 +722,13 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
     </div>
     
     <div class="footer">
-      由项目统计工具 v2.7 自动生成 | ${timestamp} | 🌙 Night Theme - 全面优化版
+      由项目统计工具 v2.10.0 自动生成 | ${timestamp} | 🌙 Night Theme - 代码质量优化版
     </div>
   </div>
   
   <script>
-    // 粒子背景初始化（修复兼容性问题）
-    if (typeof particlesJS !== 'undefined') {
+    // 粒子背景初始化（包含兼容性检查）
+    if (typeof particlesJS !== 'undefined' && particlesJS !== null) {
       particlesJS('particles-js', {
         particles: {
           number: { value: 80, density: { enable: true, value_area: 800 } },
@@ -666,7 +768,8 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
         retina_detect: true
       });
     } else {
-      console.warn('particlesJS 未加载，跳过粒子背景初始化');
+      // 静默跳过粒子背景初始化（库未加载）
+      console.info('ℹ️ particlesJS 库未加载，跳过粒子背景效果');
     }
     
     // Chart.js 全局配置
@@ -802,8 +905,104 @@ module.exports = function generateEnhancedHTML(stats, timestamp, fileTreeData, f
       }
     });
     
+    // 语言代码量对比图（堆叠柱状图）
+    ${Object.keys(stats.languageStats || {}).length > 0 ? `
+    const languageStatsData = ${JSON.stringify(stats.languageStats)};
+    const languageNames = Object.keys(languageStatsData).sort((a, b) =>
+      languageStatsData[b].totalLines - languageStatsData[a].totalLines
+    );
+    
+    new Chart(document.getElementById('languageCodeChart'), {
+      type: 'bar',
+      data: {
+        labels: languageNames,
+        datasets: [
+          {
+            label: '代码行',
+            data: languageNames.map(lang => languageStatsData[lang].codeLines),
+            backgroundColor: '#00ff88',
+            borderColor: '#00ff88',
+            borderWidth: 1
+          },
+          {
+            label: '注释行',
+            data: languageNames.map(lang => languageStatsData[lang].commentLines),
+            backgroundColor: '#00d4ff',
+            borderColor: '#00d4ff',
+            borderWidth: 1
+          },
+          {
+            label: '空白行',
+            data: languageNames.map(lang => languageStatsData[lang].blankLines),
+            backgroundColor: '#666',
+            borderColor: '#666',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: animationConfig,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              color: '#e0e0e0',
+              padding: 15,
+              font: { size: 13, weight: '600' },
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y || 0;
+                return \`\${label}: \${value.toLocaleString()} 行\`;
+              },
+              footer: function(tooltipItems) {
+                let total = 0;
+                tooltipItems.forEach(item => {
+                  total += item.parsed.y;
+                });
+                return '总计: ' + total.toLocaleString() + ' 行';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+            ticks: {
+              color: '#e0e0e0',
+              font: { size: 11 }
+            }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+            ticks: {
+              color: '#e0e0e0',
+              callback: function(value) {
+                return value.toLocaleString();
+              }
+            }
+          }
+        }
+      }
+    });
+    ` : ''}
+    
     // 趋势图表（如果有历史数据）
-    ${trendData && trendData.length > 1 ? `
+    ${trendData && trendData.totalLines && trendData.totalLines.length > 1 ? `
     const trendData = ${JSON.stringify(trendData)};
     
     // 趋势图通用配置

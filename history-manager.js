@@ -1,5 +1,5 @@
 /**
- * 历史记录管理器 v1.0 - MVP版本
+ * 历史记录管理器 v1.1
  * 负责统计数据的历史记录存储和对比分析
  */
 
@@ -7,10 +7,10 @@ const fs = require('fs');
 const path = require('path');
 
 class HistoryManager {
-  constructor(resultsDir) {
+  constructor(resultsDir, maxRecords = 100) {
     this.resultsDir = resultsDir;
     this.historyFile = path.join(resultsDir, 'history.json');
-    this.maxRecords = 100; // 最多保存100条历史记录
+    this.maxRecords = maxRecords; // 最多保存的历史记录条数（可配置）
   }
 
   /**
@@ -37,10 +37,11 @@ class HistoryManager {
         const data = fs.readFileSync(this.historyFile, 'utf8');
         return JSON.parse(data);
       }
-      return { version: '1.0', records: [] };
+      return { version: '1.1', records: [] };
     } catch (error) {
       console.warn('⚠️ 加载历史记录失败:', error.message);
-      return { version: '1.0', records: [] };
+      // 返回空历史结构以保证程序继续运行
+      return { version: '1.1', records: [] };
     }
   }
 
@@ -113,6 +114,7 @@ class HistoryManager {
   getPreviousRecord() {
     const history = this.loadHistory();
     if (history.records.length < 2) return null;
+    // 返回倒数第二条记录（用于与当前结果对比）
     return history.records[history.records.length - 2];
   }
 
