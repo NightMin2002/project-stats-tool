@@ -1,12 +1,32 @@
 # 🌙 项目统计工具 (Project Stats Tool)
 
-[![Version](https://img.shields.io/badge/version-2.9.1-blue.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-2.10.0-blue.svg)](https://github.com)
 [![Node](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具  
 > 📈 支持历史对比分析、趋势可视化、40+ 种编程语言  
 > 🌙 Night Theme 暗黑主题 + 粒子动画 + 交互式文件树
+
+---
+
+## 🚀 快速开始
+
+### 方法 1：双击运行（推荐）
+```
+双击 统计项目.bat → 自动统计当前目录
+```
+
+### 方法 2：拖放操作
+```
+拖动项目文件夹到 统计项目.bat → 统计该项目
+```
+
+### 方法 3：命令行
+```bash
+node src/project-stats.js              # 统计当前目录
+node src/project-stats.js ../my-app    # 统计指定项目
+```
 
 ---
 
@@ -18,17 +38,13 @@
 - **复杂度分析** - 平均行长度、最大文件、最长行
 - **Token 估算** - 准确估算 AI Token 使用量
 - **语言分布** - 自动识别 40+ 种编程语言
+- **按语言统计** - 每种编程语言的详细代码量和文件数 🆕
 
-### 📈 历史对比（v2.8 新增）
+### 📈 历史对比
 - **自动记录** - 每次统计自动保存历史
 - **实时对比** - 控制台显示与上次的差异
 - **趋势图表** - HTML 报告包含历史趋势曲线
 - **版本管理** - 查看/对比任意历史版本
-
-### 📁 文件组织（v2.9 优化）
-- **时间戳文件夹** - 每次统计独立文件夹（如 `2025-11-03_16-23-45/`）
-- **简洁文件名** - 统一的文件名（`统计数据.json`、`可视化报告.html`）
-- **最新快捷访问** - `results/最新/` 文件夹始终是最新结果
 
 ### 🎯 智能过滤
 - ✅ 自动识别并排除第三方库（lib、vendor、.min.js 等）
@@ -41,104 +57,39 @@
 - **粒子动画** - 交互式动态背景
 - **趋势图表** - Chart.js 驱动的历史数据可视化
 - **文件树** - 可折叠/展开的项目结构视图
+- **语言级图表** - 按语言的代码量对比图 🆕
 
 ---
 
-## 🚀 快速开始
+## 📂 输出结果
 
-### 安装
-
-```bash
-# 克隆仓库
-git clone https://github.com/NightMin2002/project-stats-tool.git
-cd project-stats-tool
-
-# 运行（Windows）
-统计项目.bat
-
-# 或使用 Node.js
-node project-stats.js [项目路径]
-```
-
-### 使用方法
-
-**方法 1：双击运行（最简单）**
-```
-双击 统计项目.bat → 自动统计当前目录
-```
-
-**方法 2：拖放操作**
-```
-拖动项目文件夹到 统计项目.bat → 统计该项目
-```
-
-**方法 3：命令行**
-```bash
-node project-stats.js              # 统计当前目录
-node project-stats.js ../my-app    # 统计指定项目
-```
-
----
-
-## 📂 输出结构（v2.9）
+运行后会在 `results/` 目录生成：
 
 ```
 results/
 ├── 最新/                          ← 快捷访问（始终是最新结果）
+│   ├── 可视化报告.html            ← ⭐ 推荐在浏览器中打开
 │   ├── 统计数据.json
 │   ├── 统计报告.md
-│   ├── 可视化报告.html            ← ⭐ 推荐在浏览器中打开
 │   ├── 项目结构.txt
 │   ├── 文件列表.txt
 │   └── 完整提取.txt
 │
-├── 2025-11-03_16-23-45/           ← 第1次统计（时间戳文件夹）
+├── 2025-11-04_10-30-11/           ← 第1次统计（时间戳文件夹）
 │   ├── 统计数据.json
 │   └── ...
 │
-├── 2025-11-03_18-45-22/           ← 第2次统计
+├── 2025-11-04_14-45-22/           ← 第2次统计
 │   └── ...
 │
 └── history.json                    ← 历史记录索引
 ```
 
-**优势**：
+**文件组织优势**：
 - ✅ 按时间自动排序
 - ✅ 文件名简洁易读
 - ✅ 快速访问最新结果
 - ✅ 历史版本一目了然
-
----
-
-## 📊 控制台输出示例
-
-```
-╔════════════════════════════════════════════════════════╗
-║              📊 项目统计结果 v2.9                      ║
-╚════════════════════════════════════════════════════════╝
-
-📁 项目信息
-   名称: my-awesome-project
-   类型: Node.js/JavaScript
-
-📂 文件统计
-   统计文件: 39 个
-   排除库文件: 6 个 🎯
-
-💻 代码统计
-   总行数:   11,631 行
-   代码行:   9,256 行 (79.6%)
-
-╔════════════════════════════════════════════════════════╗
-║              📈 对比分析结果                           ║
-╚════════════════════════════════════════════════════════╝
-
-🕒 对比基准: 2025-11-03 15:30:12
-
-📊 核心指标变化:
-   📈 文件数量          36 →         39   +3 (+8.3%)
-   📈 总行数       10,234 →     11,631   +1,397 (+13.7%)
-```
 
 ---
 
@@ -151,9 +102,9 @@ results/
 查看历史.bat
 
 # 或使用 Node.js
-node 查看历史.js                # 列表
-node 查看历史.js detail 3       # 查看第3条详情
-node 查看历史.js compare 1 5    # 对比第1和第5条
+node src/view-history.js                # 列表
+node src/view-history.js detail 3       # 查看第3条详情
+node src/view-history.js compare 1 5    # 对比第1和第5条
 ```
 
 ### HTML 趋势图
@@ -184,44 +135,57 @@ node 查看历史.js compare 1 5    # 对比第1和第5条
 
 ---
 
-## 📁 项目文件
+## 🛠️ 项目结构
 
 ```
 project-stats-tool/
-├── project-stats.js         # 主统计脚本（v2.9）
-├── history-manager.js       # 历史记录管理器
-├── html-report-template.js  # HTML 模板生成器
-├── 统计项目.bat             # Windows 启动器
-├── 查看历史.bat             # 历史记录查看器
-├── 查看历史.js              # 历史记录查看工具
-├── 历史功能说明.md          # 历史对比功能说明
-├── 文件组织说明.md          # 文件组织优化说明
-├── README.md                # 本文档
-└── results/                 # 输出目录（自动创建）
+├── 统计项目.bat            # Windows 启动器
+├── 查看历史.bat            # 历史记录查看器
+├── README.md               # 本文档
+├── LICENSE                 # MIT 许可证
+│
+├── src/                    # 源代码
+│   ├── project-stats.js    # 主统计脚本
+│   ├── history-manager.js  # 历史记录管理器
+│   ├── html-report-template.js # HTML 模板生成器
+│   └── view-history.js     # 历史记录查看工具
+│
+├── docs/                   # 文档
+│   ├── CHANGELOG.md        # 版本更新日志
+│   └── 使用说明.txt        # 快速参考指南
+│
+├── lib/                    # 第三方库（本地化）
+│   ├── chart.min.js
+│   └── particles.min.js
+│
+└── results/                # 输出目录（自动生成）
 ```
 
 ---
 
-## 📊 版本信息
+## 🔧 技术规格
 
-### 当前版本：v2.9.1 (2025-11-03) 🔧
+### 支持的语言（40+）
 
-**核心更新**：
-- 🔧 代码质量优化 - 修复潜在问题，提升健壮性
-- 📝 统一版本标识 - 所有文件版本号统一
-- ✨ 改进错误处理 - 更友好的错误提示
-- 🎯 提升可维护性 - 规范注释和代码风格
+- **前端**: JavaScript, TypeScript, HTML, CSS, Vue, React, Svelte
+- **后端**: Python, Java, Go, Rust, PHP, Ruby, C#, C++, C
+- **配置**: JSON, YAML, TOML, XML
+- **脚本**: Shell, Bash, PowerShell
+- **其他**: SQL, GraphQL, Markdown
 
-**[查看完整更新日志 →](CHANGELOG.md)**
+### Token 估算规则
 
-### 主要版本
-- **v2.9.1** - 代码质量优化 ⭐ 最新
-- **v2.9** - 文件组织优化
-- **v2.8** - 历史对比分析
-- **v2.7** - 全面优化
-- **v2.6** - Night Theme
+- 中文: ~1.5 字符/token
+- 英文: ~1.3 单词/token
+- 代码: ~3.5 字符/token
 
-**[查看所有版本详情 →](CHANGELOG.md)**
+> ⚠️ **注意**: 此为粗略估算，实际值可能有 ±20% 的偏差
+
+### 独立性保证
+
+- ✅ **零外部依赖** - 仅使用 Node.js 内置模块（`fs`, `path`）
+- ✅ **本地化库文件** - Chart.js 和 Particles.js 已内置
+- ✅ **开箱即用** - 无需 `npm install`
 
 ---
 
@@ -236,8 +200,8 @@ project-stats-tool/
 
 ## 📖 文档
 
-- [历史功能说明](历史功能说明.md) - 历史对比分析功能详解
-- [文件组织说明](文件组织说明.md) - v2.9 文件组织优化
+- **[更新日志](docs/CHANGELOG.md)** - 完整版本历史和新功能介绍
+- **[使用说明](docs/使用说明.txt)** - 快速参考指南
 
 ---
 
@@ -272,6 +236,6 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 **Made with ❤️ and 🌙 by Ω Code Agent**
 
-⭐ **[立即体验 v2.9 文件组织优化版！](#)** ⭐
+⭐ **[立即体验 v2.10.0 语言级统计版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
 
 </div>

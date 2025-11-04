@@ -24,7 +24,7 @@ if "%~1"=="" (
     echo ════════════════════════════════════════════════════════
     echo 📂 正在统计当前目录...
     echo.
-    node "%~dp0project-stats.js"
+    node "%~dp0src\project-stats.js"
 ) else (
     echo 📂 正在统计项目: %~1
     echo.
@@ -35,7 +35,7 @@ if "%~1"=="" (
     echo.
     echo ════════════════════════════════════════════════════════
     echo.
-    node "%~dp0project-stats.js" "%~1"
+    node "%~dp0src\project-stats.js" "%~1"
 )
 
 echo.

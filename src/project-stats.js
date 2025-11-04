@@ -737,11 +737,11 @@ function buildFileTreeData(dir, rootPath = CONFIG.rootDir) {
  */
 function generateHTMLReport(historyManager) {
   // 读取本地库文件
-  const chartJs = fs.existsSync(path.join(__dirname, 'lib/chart.min.js'))
-    ? fs.readFileSync(path.join(__dirname, 'lib/chart.min.js'), 'utf8')
+  const chartJs = fs.existsSync(path.join(__dirname, '../lib/chart.min.js'))
+    ? fs.readFileSync(path.join(__dirname, '../lib/chart.min.js'), 'utf8')
     : '';
-  const particlesJs = fs.existsSync(path.join(__dirname, 'lib/particles.min.js'))
-    ? fs.readFileSync(path.join(__dirname, 'lib/particles.min.js'), 'utf8')
+  const particlesJs = fs.existsSync(path.join(__dirname, '../lib/particles.min.js'))
+    ? fs.readFileSync(path.join(__dirname, '../lib/particles.min.js'), 'utf8')
     : '';
   
   // 引入外部模板函数
@@ -1482,7 +1482,7 @@ function main() {
   calculateTokens();
   
   // 初始化历史管理器
-  const resultsDir = path.join(__dirname, 'results');
+  const resultsDir = path.join(__dirname, '../results');
   if (!fs.existsSync(resultsDir)) {
     fs.mkdirSync(resultsDir, { recursive: true });
   }
