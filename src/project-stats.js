@@ -1,25 +1,27 @@
 /**
- * 项目统计工具 v2.10.0 - 模块化重构版
+ * 项目统计工具 - 智能代码统计与分析
  * 智能统计项目的文字数量、代码行数和 tokens 估算
  *
- * 🔧 内部重构 (v2.10.0):
- * - 完成模块化重构，代码从 1662 行优化到 267 行
- * - 提升代码可维护性和可读性
- * - 各模块职责清晰，易于测试和扩展
- * - 功能完全一致，无需升级版本号
- *
  * 使用方法:
- *   node project-stats.js [项目路径]
+ *   node project-stats.js [选项] [项目路径]
+ *
+ * 选项:
+ *   -h, --help       显示帮助信息
+ *   -v, --version    显示版本信息
  *
  * 示例:
  *   node project-stats.js              # 统计当前目录
  *   node project-stats.js ../my-app    # 统计指定项目
+ *   node project-stats.js --help       # 显示帮助
  *
- * 详细更新日志请查看: CHANGELOG.md
+ * 详细文档: docs/使用说明.txt
  */
 
 const fs = require('fs');
 const path = require('path');
+
+// 导入版本管理
+const { getVersion, getVersionInfo } = require('./version');
 
 // 导入配置模块
 const { createConfig, loadGitignorePatterns, initStats } = require('./config');
@@ -41,11 +43,96 @@ const { formatNumber, formatSize } = require('./utils/formatters');
 const HistoryManager = require('./history-manager.js');
 
 /**
+ * 显示帮助信息
+ */
+function printHelp() {
+  const versionInfo = getVersionInfo();
+  console.log(`
+╔════════════════════════════════════════════════════════╗
+║          📊 项目统计工具 ${getVersion()}
+║          ${versionInfo.name}
+╚════════════════════════════════════════════════════════╝
+
+用法: node project-stats.js [选项] [项目路径]
+
+选项:
+  -h, --help       显示此帮助信息
+  -v, --version    显示版本信息
+
+参数:
+  [项目路径]       要统计的项目目录（默认：当前目录的父目录）
+
+示例:
+  node project-stats.js
+      统计当前目录的父目录
+
+  node project-stats.js ../my-project
+      统计指定项目
+
+  node project-stats.js --help
+      显示帮助信息
+
+功能特性:
+  ✅ 智能统计文字、代码、Token
+  ✅ 支持 50+ 种编程语言
+  ✅ 自动排除第三方库文件
+  ✅ 历史记录对比分析
+  ✅ 可视化 HTML 报告
+  ✅ 完整文字内容提取
+
+详细文档: docs/使用说明.txt
+项目主页: https://github.com/NightMin2002/project-stats-tool
+  `);
+}
+
+/**
+ * 显示版本信息
+ */
+function printVersion() {
+  const versionInfo = getVersionInfo();
+  console.log(`
+📊 项目统计工具
+版本: ${getVersion()}
+名称: ${versionInfo.name}
+发布日期: ${versionInfo.releaseDate}
+
+作者: Ω Code Agent
+许可证: MIT
+  `);
+}
+
+/**
+ * 解析命令行参数
+ */
+function parseArguments() {
+  const args = process.argv.slice(2);
+  
+  // 检查帮助参数
+  if (args.includes('--help') || args.includes('-h')) {
+    printHelp();
+    process.exit(0);
+  }
+  
+  // 检查版本参数
+  if (args.includes('--version') || args.includes('-v')) {
+    printVersion();
+    process.exit(0);
+  }
+  
+  // 获取目标目录
+  const targetDir = args[0]
+    ? path.resolve(args[0])
+    : path.resolve(process.cwd(), '..');
+  
+  return { targetDir };
+}
+
+/**
  * 打印统计结果到控制台
  */
 function printResults(stats) {
   console.log('\n╔════════════════════════════════════════════════════════╗');
-  console.log('║              📊 项目统计结果 v2.10.0                   ║');
+  console.log(`║              📊 项目统计结果 ${getVersion()}                   ║`);
   console.log('╚════════════════════════════════════════════════════════╝\n');
   
   console.log('📁 项目信息');
@@ -163,8 +250,8 @@ function printChangeItem(label, change) {
  * 主函数
  */
 function main() {
-  // 获取目标目录
-  const targetDir = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(process.cwd(), '..');
+  // 解析命令行参数
+  const { targetDir } = parseArguments();
   
   // 检查目录是否存在
   if (!fs.existsSync(targetDir)) {

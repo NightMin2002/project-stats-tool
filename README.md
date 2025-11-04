@@ -1,13 +1,13 @@
 # 🌙 项目统计工具 (Project Stats Tool)
 
-[![Version](https://img.shields.io/badge/version-2.11.0-blue.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-2.12.0-blue.svg)](https://github.com)
 [![Node](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具
-> 📈 支持历史对比分析、趋势可视化、40+ 种编程语言
+> 📈 支持历史对比分析、趋势可视化、50+ 种编程语言
 > 🌙 Night Theme 暗黑主题 + 粒子动画 + 交互式文件树
-> ✨ **v2.11.0 新增**：模块化架构 + 禁止文字选中优化
+> ✨ **v2.12.0 新增**：性能优化 + 50+ 语言支持 + 命令行增强
 
 ---
 
@@ -27,6 +27,8 @@
 ```bash
 node src/project-stats.js              # 统计当前目录
 node src/project-stats.js ../my-app    # 统计指定项目
+node src/project-stats.js --help       # 显示帮助信息
+node src/project-stats.js --version    # 显示版本信息
 ```
 
 ---
@@ -38,14 +40,16 @@ node src/project-stats.js ../my-app    # 统计指定项目
 - **代码统计** - 代码行、注释行、空白行（含占比）
 - **复杂度分析** - 平均行长度、最大文件、最长行
 - **Token 估算** - 准确估算 AI Token 使用量
-- **语言分布** - 自动识别 40+ 种编程语言
+- **语言分布** - 自动识别 50+ 种编程语言
 - **按语言统计** - 每种编程语言的详细代码量和文件数
 
-### 🆕 v2.11.0 新增特性
-- **模块化架构** - 代码拆分为清晰的CSS/JS/组件模块
-- **禁止文字选中** - 优化交互体验，保留代码区域可选中
-- **Night Theme美化** - 增强视觉效果和动画
-- **隐藏滚动条** - 统一视觉风格
+### 🆕 v2.12.0 新增特性
+- **性能优化** - Set查找优化，大幅提升扫描速度
+- **50+ 语言支持** - 新增 Dart、Lua、R、Scala 等语言
+- **命令行增强** - 支持 --help 和 --version 参数
+- **统一版本管理** - 集中管理版本号，便于维护
+- **错误处理增强** - 更智能的错误提示和恢复机制
+- **数据安全** - 自动备份历史记录，防止数据丢失
 
 ### 📈 历史对比
 - **自动记录** - 每次统计自动保存历史
@@ -142,48 +146,18 @@ node src/view-history.js compare 1 5    # 对比第1和第5条
 
 ---
 
-## 🛠️ 项目结构
-
-```
-project-stats-tool/
-├── 统计项目.bat            # Windows 启动器
-├── 查看历史.bat            # 历史记录查看器
-├── README.md               # 本文档
-├── LICENSE                 # MIT 许可证
-│
-├── src/                    # 源代码
-│   ├── project-stats.js    # 主统计脚本
-│   ├── history-manager.js  # 历史记录管理器
-│   ├── html-report-template.js # 🆕 模块化HTML模板
-│   ├── view-history.js     # 历史记录查看工具
-│   └── templates/          # 🆕 模块化组件目录
-│       ├── styles.css.js   # CSS样式模块
-│       ├── scripts.js      # JavaScript逻辑模块
-│       └── components.js   # HTML组件模块
-│
-├── docs/                   # 文档
-│   ├── CHANGELOG.md        # 版本更新日志
-│   ├── 模块化架构说明.md  # 🆕 模块化架构详解
-│   └── 使用说明.txt        # 快速参考指南
-│
-├── lib/                    # 第三方库（本地化）
-│   ├── chart.min.js
-│   └── particles.min.js
-│
-└── results/                # 输出目录（自动生成）
-```
-
----
-
 ## 🔧 技术规格
 
-### 支持的语言（40+）
+### 支持的语言（50+）
 
-- **前端**: JavaScript, TypeScript, HTML, CSS, Vue, React, Svelte
-- **后端**: Python, Java, Go, Rust, PHP, Ruby, C#, C++, C
-- **配置**: JSON, YAML, TOML, XML
-- **脚本**: Shell, Bash, PowerShell
-- **其他**: SQL, GraphQL, Markdown
+- **Web前端**: JavaScript, TypeScript, HTML, CSS, Vue, React, Svelte
+- **后端**: Python, Java, Go, Rust, PHP, Ruby, C#, C++, C, Swift, Kotlin
+- **函数式**: Elixir, Erlang, Elm, Haskell, Clojure, F#
+- **其他**: Dart, Lua, R, Scala, Perl
+- **配置**: JSON, YAML, TOML, XML, INI, ENV
+- **脚本**: Shell, Bash, PowerShell, Batch
+- **数据库**: SQL, GraphQL, Prisma
+- **标记**: Markdown, reStructuredText, LaTeX
 
 ### Token 估算规则
 
@@ -250,6 +224,6 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 **Made with ❤️ and 🌙 by Ω Code Agent**
 
-⭐ **[立即体验 v2.11.0 模块化优化版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
+⭐ **[立即体验 v2.12.0 性能增强版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
 
 </div>

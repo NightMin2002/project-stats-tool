@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { LANGUAGE_MAP } = require('../config');
 const { formatNumber, formatSize } = require('../utils/formatters');
+const { getVersion } = require('../version');
 
 /**
  * 生成 Markdown 报告
@@ -53,11 +54,12 @@ function generateMarkdownReport(stats) {
 |------|--------|
 `;
 
-  Object.entries(stats.files.byLanguage)
+  // 使用数组 join 优化字符串拼接性能
+  const languageRows = Object.entries(stats.files.byLanguage)
     .sort((a, b) => b[1] - a[1])
-    .forEach(([lang, count]) => {
-      markdown += `| ${lang} | ${formatNumber(count)} |\n`;
-    });
+    .map(([lang, count]) => `| ${lang} | ${formatNumber(count)} |`);
+  
+  markdown += languageRows.join('\n') + '\n';
 
   markdown += `
 ---
@@ -131,7 +133,7 @@ function generateMarkdownReport(stats) {
 
 ---
 
-*由 [项目统计工具 v2.10.0](https://github.com) 自动生成*
+*由 [项目统计工具 ${getVersion()}](https://github.com/NightMin2002/project-stats-tool) 自动生成*
 `;
 
   return markdown;
@@ -194,7 +196,7 @@ function generateFileList(stats) {
   fileList += `📦 总大小: ${formatSize(stats.text.totalChars)}\n`;
   fileList += `📝 总行数: ${formatNumber(stats.code.totalLines)} 行\n`;
   fileList += `${'='.repeat(60)}\n\n`;
-  fileList += `*由项目统计工具 v2.10.0 自动生成*\n`;
+  fileList += `*由项目统计工具 ${getVersion()} 自动生成*\n`;
 
   return fileList;
 }

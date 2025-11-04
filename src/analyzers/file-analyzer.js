@@ -9,6 +9,10 @@ const { LANGUAGE_MAP } = require('../config');
 const { countChineseChars, countEnglishWords } = require('./text-analyzer');
 const { analyzeCodeLine } = require('./code-analyzer');
 const { isCodeFile } = require('../utils/file-utils');
+const { formatSize } = require('../utils/formatters');
+
+// 最大文件大小限制（50MB）
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 /**
  * 分析单个文件并更新统计数据
@@ -18,6 +22,14 @@ const { isCodeFile } = require('../utils/file-utils');
  */
 function analyzeFile(filePath, stats, config) {
   try {
+    // 先检查文件大小，避免读取超大文件导致内存溢出
+    const fileStat = fs.statSync(filePath);
+    if (fileStat.size > MAX_FILE_SIZE) {
+      console.warn(`⚠️  文件过大，跳过: ${path.relative(config.rootDir, filePath)} (${formatSize(fileStat.size)})`);
+      stats.files.excluded.total++;
+      return;
+    }
+    
     const content = fs.readFileSync(filePath, 'utf8');
     const ext = path.extname(filePath).toLowerCase();
     const lines = content.split('\n');
@@ -111,7 +123,18 @@ function analyzeFile(filePath, stats, config) {
     }
     
   } catch (error) {
-    // 静默忽略文件读取错误（可能是编码问题或权限不足）
+    // 处理文件读取错误
+    if (error.code === 'EACCES' || error.code === 'EPERM') {
+      // 权限错误，静默跳过
+    } else if (error.code === 'ENOENT') {
+      // 文件不存在（可能在扫描过程中被删除）
+    } else if (error.message && error.message.includes('invalid') || error.message.includes('encoding')) {
+      // 编码错误，可能是二进制文件
+      console.warn(`⚠️  文件编码错误，跳过: ${path.relative(config.rootDir, filePath)}`);
+    } else {
+      // 其他未知错误
+      console.warn(`⚠️  分析文件失败: ${path.relative(config.rootDir, filePath)} (${error.message})`);
+    }
   }
 }
 

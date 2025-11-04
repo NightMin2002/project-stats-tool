@@ -7,18 +7,73 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * 语言扩展名映射
+ * 语言扩展名映射（50+ 种编程语言）
  */
 const LANGUAGE_MAP = {
-  '.js': 'JavaScript', '.jsx': 'JavaScript',
+  // Web 前端
+  '.js': 'JavaScript', '.jsx': 'JavaScript', '.mjs': 'JavaScript',
   '.ts': 'TypeScript', '.tsx': 'TypeScript',
-  '.py': 'Python', '.java': 'Java',
-  '.go': 'Go', '.rs': 'Rust',
-  '.cpp': 'C++', '.c': 'C', '.h': 'C/C++',
-  '.css': 'CSS', '.scss': 'SCSS', '.sass': 'Sass',
-  '.html': 'HTML', '.vue': 'Vue', '.svelte': 'Svelte',
-  '.php': 'PHP', '.rb': 'Ruby', '.cs': 'C#',
-  '.md': 'Markdown', '.json': 'JSON'
+  '.css': 'CSS', '.scss': 'SCSS', '.sass': 'Sass', '.less': 'Less',
+  '.html': 'HTML', '.htm': 'HTML',
+  '.vue': 'Vue', '.svelte': 'Svelte',
+  
+  // 后端语言
+  '.py': 'Python', '.pyw': 'Python', '.pyx': 'Python',
+  '.java': 'Java',
+  '.go': 'Go',
+  '.rs': 'Rust',
+  '.cpp': 'C++', '.cc': 'C++', '.cxx': 'C++',
+  '.c': 'C',
+  '.h': 'C/C++', '.hpp': 'C++', '.hxx': 'C++',
+  '.php': 'PHP',
+  '.rb': 'Ruby',
+  '.cs': 'C#',
+  '.swift': 'Swift',
+  '.kt': 'Kotlin', '.kts': 'Kotlin',
+  '.scala': 'Scala',
+  '.dart': 'Dart',
+  '.lua': 'Lua',
+  '.r': 'R',
+  '.m': 'Objective-C',
+  '.mm': 'Objective-C++',
+  
+  // 函数式语言
+  '.ex': 'Elixir', '.exs': 'Elixir',
+  '.erl': 'Erlang', '.hrl': 'Erlang',
+  '.elm': 'Elm',
+  '.hs': 'Haskell',
+  '.clj': 'Clojure', '.cljs': 'ClojureScript',
+  '.fs': 'F#', '.fsx': 'F#',
+  
+  // 配置和数据
+  '.json': 'JSON',
+  '.yaml': 'YAML', '.yml': 'YAML',
+  '.toml': 'TOML',
+  '.xml': 'XML',
+  '.ini': 'INI',
+  '.env': 'ENV',
+  
+  // 脚本语言
+  '.sh': 'Shell', '.bash': 'Bash',
+  '.bat': 'Batch', '.cmd': 'Batch',
+  '.ps1': 'PowerShell',
+  '.pl': 'Perl',
+  
+  // 数据库和查询
+  '.sql': 'SQL',
+  '.graphql': 'GraphQL', '.gql': 'GraphQL',
+  '.prisma': 'Prisma',
+  
+  // 标记语言
+  '.md': 'Markdown', '.markdown': 'Markdown',
+  '.rst': 'reStructuredText',
+  '.tex': 'LaTeX',
+  
+  // 其他
+  '.proto': 'Protocol Buffers',
+  '.sol': 'Solidity',
+  '.v': 'Verilog',
+  '.vhd': 'VHDL'
 };
 
 /**
@@ -31,24 +86,31 @@ function createConfig(targetDir) {
     // 项目根目录
     rootDir: targetDir,
     
-    // 需要统计的文件扩展名（更全面）
+    // 需要统计的文件扩展名（50+ 种语言）
     extensions: {
       code: [
         // Web 前端
-        '.js', '.jsx', '.ts', '.tsx', '.vue', '.svelte',
+        '.js', '.jsx', '.mjs', '.ts', '.tsx', '.vue', '.svelte',
         '.css', '.scss', '.sass', '.less', '.stylus',
         '.html', '.htm', '.xml', '.svg',
         // 后端
-        '.py', '.java', '.go', '.rs', '.cpp', '.c', '.h',
-        '.php', '.rb', '.cs', '.swift', '.kt',
+        '.py', '.pyw', '.pyx', '.java', '.go', '.rs',
+        '.cpp', '.cc', '.cxx', '.c', '.h', '.hpp', '.hxx',
+        '.php', '.rb', '.cs', '.swift', '.kt', '.kts',
+        '.scala', '.dart', '.lua', '.r', '.m', '.mm',
+        // 函数式语言
+        '.ex', '.exs', '.erl', '.hrl', '.elm', '.hs',
+        '.clj', '.cljs', '.fs', '.fsx',
         // 配置和数据
         '.json', '.yaml', '.yml', '.toml', '.ini', '.env',
         // Shell 和脚本
-        '.sh', '.bash', '.bat', '.ps1',
+        '.sh', '.bash', '.bat', '.cmd', '.ps1', '.pl',
+        // 数据库和查询
+        '.sql', '.graphql', '.gql', '.prisma',
         // 其他
-        '.sql', '.graphql', '.prisma'
+        '.proto', '.sol', '.v', '.vhd'
       ],
-      docs: ['.md', '.txt', '.rst', '.adoc']
+      docs: ['.md', '.markdown', '.txt', '.rst', '.adoc', '.tex']
     },
     
     // 通用排除目录
@@ -108,13 +170,15 @@ function loadGitignorePatterns(rootDir) {
   
   try {
     const content = fs.readFileSync(gitignorePath, 'utf8');
-    return content
+    const patterns = content
       .split('\n')
       .map(line => line.trim())
       .filter(line => line && !line.startsWith('#'))
       .map(pattern => pattern.replace(/\/$/, ''));
+    
+    return patterns;
   } catch (error) {
-    // 忽略读取错误
+    console.warn(`⚠️  无法读取 .gitignore: ${error.message}`);
     return [];
   }
 }

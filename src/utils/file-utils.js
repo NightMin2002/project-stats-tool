@@ -52,9 +52,16 @@ function shouldExclude(filePath, config, gitignorePatterns) {
   const relativePath = path.relative(config.rootDir, filePath);
   const normalizedPath = relativePath.replace(/\\/g, '/');
   
-  // 检查默认排除规则
-  if (config.defaultExclude.some(pattern => normalizedPath.includes(pattern))) {
-    return true;
+  // 检查默认排除规则（使用 Set 优化性能）
+  // 如果 config 还没有 excludeSet，创建一个
+  if (!config._excludeSet) {
+    config._excludeSet = new Set(config.defaultExclude);
+  }
+  
+  for (const pattern of config._excludeSet) {
+    if (normalizedPath.includes(pattern)) {
+      return true;
+    }
   }
   
   // 智能排除：如果目录包含 project-stats.js，但不是根目录本身，则排除该目录

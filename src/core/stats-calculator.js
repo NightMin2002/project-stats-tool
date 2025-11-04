@@ -11,12 +11,18 @@ const path = require('path');
  * @param {object} stats - 统计数据对象
  */
 function calculateComplexity(stats) {
-  if (stats.code.codeLines > 0) {
+  // 计算平均行长度（安全的除法操作）
+  if (stats.code.totalLines > 0 && stats.text.codeChars >= 0) {
     stats.complexity.avgLineLength = Math.round(stats.text.codeChars / stats.code.totalLines);
+  } else {
+    stats.complexity.avgLineLength = 0;
   }
   
-  if (stats.files.total > 0) {
+  // 计算平均文件大小（安全的除法操作）
+  if (stats.files.total > 0 && stats.text.totalChars >= 0) {
     stats.complexity.avgFileSize = Math.round(stats.text.totalChars / stats.files.total);
+  } else {
+    stats.complexity.avgFileSize = 0;
   }
 }
 
@@ -28,13 +34,18 @@ function calculateComplexity(stats) {
 function calculateTokens(stats, config) {
   const { chineseCharPerToken, englishWordPerToken, codeCharPerToken } = config.tokenEstimate;
   
-  stats.tokens.breakdown.fromChinese = Math.ceil(stats.text.chineseChars / chineseCharPerToken);
-  stats.tokens.breakdown.fromEnglish = Math.ceil(stats.text.englishWords / englishWordPerToken);
-  stats.tokens.breakdown.fromCode = Math.ceil(stats.text.codeChars / codeCharPerToken);
+  // 确保除数不为零
+  const safeChinesePerToken = chineseCharPerToken > 0 ? chineseCharPerToken : 1.5;
+  const safeEnglishPerToken = englishWordPerToken > 0 ? englishWordPerToken : 1.3;
+  const safeCodePerToken = codeCharPerToken > 0 ? codeCharPerToken : 3.5;
   
-  stats.tokens.estimated = 
-    stats.tokens.breakdown.fromChinese + 
-    stats.tokens.breakdown.fromEnglish + 
+  stats.tokens.breakdown.fromChinese = Math.ceil(stats.text.chineseChars / safeChinesePerToken);
+  stats.tokens.breakdown.fromEnglish = Math.ceil(stats.text.englishWords / safeEnglishPerToken);
+  stats.tokens.breakdown.fromCode = Math.ceil(stats.text.codeChars / safeCodePerToken);
+  
+  stats.tokens.estimated =
+    stats.tokens.breakdown.fromChinese +
+    stats.tokens.breakdown.fromEnglish +
     stats.tokens.breakdown.fromCode;
 }
 

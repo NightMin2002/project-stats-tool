@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { shouldExclude, isCodeFile, isDocFile } = require('../utils/file-utils');
 const { formatNumber, formatSize } = require('../utils/formatters');
+const { getVersion } = require('../version');
 
 /**
  * 构建目录树结构（文本格式）
@@ -88,7 +89,7 @@ function generateProjectStructure(stats, config, gitignorePatterns) {
    • 总目录数: (已包含在树中)
    • 排除文件: ${formatNumber(stats.files.excluded.libraries)} 个第三方库
 
-*由项目统计工具 v2.10.0 自动生成*
+*由项目统计工具 ${getVersion()} 自动生成*
 `;
   
   return structure;
