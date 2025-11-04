@@ -1,12 +1,13 @@
 # 🌙 项目统计工具 (Project Stats Tool)
 
-[![Version](https://img.shields.io/badge/version-2.10.0-blue.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-2.11.0-blue.svg)](https://github.com)
 [![Node](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具  
-> 📈 支持历史对比分析、趋势可视化、40+ 种编程语言  
+> 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具
+> 📈 支持历史对比分析、趋势可视化、40+ 种编程语言
 > 🌙 Night Theme 暗黑主题 + 粒子动画 + 交互式文件树
+> ✨ **v2.11.0 新增**：模块化架构 + 禁止文字选中优化
 
 ---
 
@@ -38,7 +39,13 @@ node src/project-stats.js ../my-app    # 统计指定项目
 - **复杂度分析** - 平均行长度、最大文件、最长行
 - **Token 估算** - 准确估算 AI Token 使用量
 - **语言分布** - 自动识别 40+ 种编程语言
-- **按语言统计** - 每种编程语言的详细代码量和文件数 🆕
+- **按语言统计** - 每种编程语言的详细代码量和文件数
+
+### 🆕 v2.11.0 新增特性
+- **模块化架构** - 代码拆分为清晰的CSS/JS/组件模块
+- **禁止文字选中** - 优化交互体验，保留代码区域可选中
+- **Night Theme美化** - 增强视觉效果和动画
+- **隐藏滚动条** - 统一视觉风格
 
 ### 📈 历史对比
 - **自动记录** - 每次统计自动保存历史
@@ -147,11 +154,16 @@ project-stats-tool/
 ├── src/                    # 源代码
 │   ├── project-stats.js    # 主统计脚本
 │   ├── history-manager.js  # 历史记录管理器
-│   ├── html-report-template.js # HTML 模板生成器
-│   └── view-history.js     # 历史记录查看工具
+│   ├── html-report-template.js # 🆕 模块化HTML模板
+│   ├── view-history.js     # 历史记录查看工具
+│   └── templates/          # 🆕 模块化组件目录
+│       ├── styles.css.js   # CSS样式模块
+│       ├── scripts.js      # JavaScript逻辑模块
+│       └── components.js   # HTML组件模块
 │
 ├── docs/                   # 文档
 │   ├── CHANGELOG.md        # 版本更新日志
+│   ├── 模块化架构说明.md  # 🆕 模块化架构详解
 │   └── 使用说明.txt        # 快速参考指南
 │
 ├── lib/                    # 第三方库（本地化）
@@ -201,6 +213,7 @@ project-stats-tool/
 ## 📖 文档
 
 - **[更新日志](docs/CHANGELOG.md)** - 完整版本历史和新功能介绍
+- **[模块化架构说明](docs/模块化架构说明.md)** - 🆕 模块化设计详解
 - **[使用说明](docs/使用说明.txt)** - 快速参考指南
 
 ---
@@ -236,6 +249,6 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 **Made with ❤️ and 🌙 by Ω Code Agent**
 
-⭐ **[立即体验 v2.10.0 语言级统计版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
+⭐ **[立即体验 v2.11.0 模块化优化版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
 
 </div>
