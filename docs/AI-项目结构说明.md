@@ -197,15 +197,16 @@ tokens = (中文字符 / 1.5) + (英文单词 / 1.3) + (代码字符 / 3.5)
 
 ### 生成层
 
-#### [`generators/html-generator.js`](../src/generators/html-generator.js:1) - HTML生成器（60行）
+#### [`generators/html-generator.js`](../src/generators/html-generator.js:1) - HTML生成器
 **职责**:
 - 生成 HTML 可视化报告
 - 读取本地库文件（Chart.js、Particles.js）
-- 生成历史趋势数据
-- 调用模板系统
+- 生成历史趋势数据（≥2 条记录）
+- 传入与上次统计的对比数据（用于可视化对比卡片）
+- 调用模板系统（以 options 传参）
 
 **核心函数**:
-- `generateHTMLReport(stats, fileTreeData, historyManager)` - 返回完整HTML字符串
+- `generateHTMLReport(stats, fileTreeData, historyManager, comparisonData?)` - 返回完整HTML字符串
 
 **依赖**:
 - `html-report-template.js` - 总模板
@@ -267,20 +268,49 @@ results/YYYY-MM-DD_HH-MM-SS/
 
 ### 模板层（v2.11.0 模块化）
 
-#### [`html-report-template.js`](../src/html-report-template.js:1) - HTML总模板
+#### [`html-report-template.js`](../src/html-report-template.js:1) - HTML总模板（模块化）
 **职责**:
 - 整合所有模板组件
 - 生成最终的完整 HTML
 
 **核心函数**:
-- `generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize, libs, trendData)`
+- `generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize, options)`
+
+`options` 结构:
+```ts
+{
+  libs?: { chartJs?: string; particlesJs?: string },
+  trendData?: {
+    totalLines: { label: string; value: number; tag?: string }[],
+    files: { label: string; value: number }[],
+    tokens: { label: string; value: number }[],
+    codeLines: { label: string; value: number }[]
+  } | null,
+  comparisonData?: {
+    isFirstRun: boolean,
+    previousTime?: string,
+    previousTag?: string | null,
+    comparison?: {
+      files: Change,
+      totalChars: Change,
+      totalLines: Change,
+      codeLines: Change,
+      commentLines: Change,
+      tokens: Change
+    }
+  } | null
+}
+
+type Change = {
+  old: number; new: number; diff: number; rate: number;
+  diffFormatted: string; rateFormatted: string; trend: 'up'|'down'|'stable'
+}
+```
 
 **依赖模块**:
-```javascript
-const { getCSSStyles } = require('./templates/styles.css.js');
-const { getJavaScript } = require('./templates/scripts.js');
-const { generateHTMLComponents } = require('./templates/components.js');
-```
+- `templates/styles.css.js` 导出完整 CSS 字符串
+- `templates/scripts.js` 导出 `generateScripts(stats, fileTreeData, trendData)`
+- `templates/components.js` 导出各组件生成器
 
 #### [`templates/styles.css.js`](../src/templates/styles.css.js:1) - CSS样式模块（588行）
 **职责**:
@@ -297,15 +327,16 @@ const { generateHTMLComponents } = require('./templates/components.js');
 - 暗黑主题配色（Night Theme）
 - 粒子动画背景
 
-#### [`templates/scripts.js`](../src/templates/scripts.js:1) - JavaScript模块（562行）
+#### [`templates/scripts.js`](../src/templates/scripts.js:1) - JavaScript模块
 **职责**:
 - 前端交互逻辑
 - 粒子动画初始化
 - Chart.js 图表渲染
 - 文件树交互（折叠/展开）
+ - 历史对比区块的显示/隐藏开关（按钮）
 
 **核心导出**:
-- `getJavaScript(stats, fileTreeData, libs, trendData)` - 返回完整JS字符串
+- `generateScripts(stats, fileTreeData, trendData)` - 返回完整JS字符串
 
 **主要功能**:
 - `initParticles()` - 初始化粒子背景
@@ -313,7 +344,7 @@ const { generateHTMLComponents } = require('./templates/components.js');
 - `initFileTree()` - 初始化文件树交互
 - `switchTab()` - Tab 切换
 
-#### [`templates/components.js`](../src/templates/components.js:1) - HTML组件模块（363行）
+#### [`templates/components.js`](../src/templates/components.js:1) - HTML组件模块
 **职责**:
 - 生成可复用的 HTML 组件
 
@@ -330,9 +361,28 @@ module.exports = {
   generateFileTreeSection,   // 文件树
   generateLanguageStatsTable,// 语言统计表
   generateComplexitySection, // 复杂度分析
+  generateComparisonSection, // 🆕 历史对比区块（带隐藏开关）
   generateFooter            // 页脚
 };
 ```
+
+---
+
+## 🔄 可视化历史对比（新增）
+
+在 HTML 报告中新增“历史对比分析”区块：
+
+- 自动对比“当前统计”与“上一次统计”的关键指标：文件数、总字符、总行、代码行、注释行、Tokens
+- 以卡片形式展示变化值和变化率，并以颜色区分趋势（上升/下降/持平）
+- 提供“隐藏对比/显示对比”切换按钮（默认展开）
+- 对比基准会展示上次统计的时间与可选标签
+
+相关实现：
+- 生成端：`generators/html-generator.js` 收集 `trendData` 与 `comparisonData`
+- 模板端：`html-report-template.js` 注入对比区块
+- 组件端：`templates/components.js` 的 `generateComparisonSection`
+- 脚本端：`templates/scripts.js` 绑定显示/隐藏按钮逻辑
+- 样式端：`templates/styles.css.js` 定义对比卡片与按钮样式
 
 ---
 

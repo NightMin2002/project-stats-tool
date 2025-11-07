@@ -305,7 +305,12 @@ function main() {
     structure: generateProjectStructure(stats, config, gitignorePatterns),
     fileList: generateFileList(stats),
     fullText: extractAllText(stats),
-    html: generateHTMLReport(stats, fileTreeData, historyManager)
+    html: generateHTMLReport(
+      stats,
+      fileTreeData,
+      historyManager,
+      comparison.isFirstRun ? null : comparison
+    )
   };
   
   // 保存报告

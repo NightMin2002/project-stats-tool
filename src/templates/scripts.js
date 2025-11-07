@@ -536,5 +536,19 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
       </div>
     \`;
     document.getElementById('fileTree').insertAdjacentHTML('beforebegin', treeControls);
+
+    // ========== 历史对比显示控制 ==========
+    const comparisonToggleBtn = document.getElementById('toggleComparisonBtn');
+    const comparisonContent = document.getElementById('comparisonContent');
+    if (comparisonToggleBtn && comparisonContent) {
+      let comparisonVisible = true;
+      comparisonToggleBtn.addEventListener('click', () => {
+        comparisonVisible = !comparisonVisible;
+        comparisonContent.style.display = comparisonVisible ? 'block' : 'none';
+        comparisonToggleBtn.textContent = comparisonVisible ? '隐藏对比' : '显示对比';
+        comparisonToggleBtn.setAttribute('aria-expanded', comparisonVisible ? 'true' : 'false');
+        comparisonToggleBtn.classList.toggle('is-collapsed', !comparisonVisible);
+      });
+    }
   `;
 };

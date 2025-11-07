@@ -12,9 +12,10 @@ const { formatNumber, formatSize } = require('../utils/formatters');
  * @param {object} stats - 统计数据对象
  * @param {object} fileTreeData - 文件树数据
  * @param {object} historyManager - 历史管理器实例
+ * @param {object|null} comparisonData - 与上一次统计的对比数据
  * @returns {string} HTML 报告内容
  */
-function generateHTMLReport(stats, fileTreeData, historyManager) {
+function generateHTMLReport(stats, fileTreeData, historyManager, comparisonData = null) {
   console.log('\n🎨 正在生成 HTML 可视化报告...');
   
   // 读取本地库文件
@@ -49,9 +50,13 @@ function generateHTMLReport(stats, fileTreeData, historyManager) {
   }
   
   return generateEnhancedHTML(stats, timestamp, fileTreeData, formatNumber, formatSize, {
-    chartJs,
-    particlesJs
-  }, trendData);
+    libs: {
+      chartJs,
+      particlesJs
+    },
+    trendData,
+    comparisonData
+  });
 }
 
 module.exports = {

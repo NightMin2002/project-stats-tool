@@ -52,6 +52,80 @@ function generateMetaCards(timestamp, projectType) {
 }
 
 /**
+ * 生成历史对比分析区域
+ */
+function generateComparisonSection(comparison, formatNumber) {
+  if (!comparison || comparison.isFirstRun || !comparison.comparison) {
+    return '';
+  }
+
+  const previousLabel = new Date(comparison.previousTime).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+
+  const metrics = [
+    { key: 'files', label: '文件数', icon: '📁' },
+    { key: 'totalChars', label: '总字符', icon: '📝' },
+    { key: 'totalLines', label: '总行数', icon: '📏' },
+    { key: 'codeLines', label: '代码行', icon: '💻' },
+    { key: 'commentLines', label: '注释行', icon: '💬' },
+    { key: 'tokens', label: 'Tokens', icon: '🎯' }
+  ];
+
+  const cardsHtml = metrics.map(({ key, label, icon }) => {
+    const change = comparison.comparison[key];
+    if (!change) return '';
+
+    const trendClass = change.trend === 'up' ? 'trend-up' : change.trend === 'down' ? 'trend-down' : 'trend-stable';
+    const trendIcon = change.trend === 'up' ? '📈' : change.trend === 'down' ? '📉' : '➡️';
+
+    return `
+        <div class="comparison-card ${trendClass}">
+          <div class="comparison-icon">${icon}</div>
+          <div class="comparison-title">${label}</div>
+          <div class="comparison-values">
+            <div>
+              <span class="label">之前</span>
+              <span class="value">${formatNumber(change.old)}</span>
+            </div>
+            <div>
+              <span class="label">当前</span>
+              <span class="value">${formatNumber(change.new)}</span>
+            </div>
+          </div>
+          <div class="comparison-diff">
+            <span class="trend-icon">${trendIcon}</span>
+            <span>${change.diffFormatted}</span>
+            <span>${change.rateFormatted}</span>
+          </div>
+        </div>
+      `;
+  }).join('');
+
+  return `
+  <div class="section" id="comparisonSection">
+    <div class="section-header">
+      <h2 class="section-title">🔄 历史对比分析</h2>
+      <button id="toggleComparisonBtn" class="toggle-btn" aria-expanded="true">隐藏对比</button>
+    </div>
+    <div class="comparison-meta">
+      <div>对比基准：<span>${previousLabel}</span>${comparison.previousTag ? ` <span class="tag">#${comparison.previousTag}</span>` : ''}</div>
+      <div>当前版本：<span>本次统计</span></div>
+    </div>
+    <div id="comparisonContent">
+      <div class="comparison-grid">
+        ${cardsHtml}
+      </div>
+    </div>
+  </div>`;
+}
+
+/**
  * 生成核心统计卡片区域
  */
 function generateCoreStats(stats, formatNumber, formatSize, languageStats) {
@@ -335,5 +409,6 @@ module.exports = {
   generateFileTreeSection,
   generateLanguageStatsTable,
   generateComplexitySection,
+  generateComparisonSection,
   generateFooter
 };

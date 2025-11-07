@@ -177,6 +177,149 @@ module.exports = `
     font-weight: 600; /* 🆕 加粗 */
   }
   
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+    padding-bottom: 15px;
+  }
+  
+  .section-header .section-title {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  
+  .toggle-btn {
+    background: rgba(0, 212, 255, 0.15);
+    color: #00d4ff;
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95em;
+    transition: all 0.3s ease;
+    user-select: none;
+  }
+  
+  .toggle-btn:hover {
+    background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%);
+    color: #0a0e27;
+    box-shadow: 0 10px 24px rgba(0, 212, 255, 0.35);
+  }
+  
+  .toggle-btn.is-collapsed {
+    opacity: 0.8;
+  }
+  
+  .comparison-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+    color: #888;
+    font-size: 0.95em;
+  }
+  
+  .comparison-meta span {
+    color: #00d4ff;
+    font-weight: 600;
+  }
+  
+  .comparison-meta .tag {
+    display: inline-block;
+    padding: 0 8px;
+    margin-left: 6px;
+    background: rgba(199, 112, 240, 0.2);
+    border-radius: 6px;
+    color: #c770f0;
+    font-size: 0.85em;
+    font-weight: 600;
+  }
+  
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+  }
+  
+  .comparison-card {
+    background: linear-gradient(135deg, #0f1729 0%, #1a0f3a 100%);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 15px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .comparison-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 35px rgba(0, 212, 255, 0.25);
+    border-color: rgba(0, 255, 136, 0.4);
+  }
+  
+  .comparison-card .comparison-icon {
+    font-size: 1.5em;
+  }
+  
+  .comparison-title {
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #00ff88;
+  }
+  
+  .comparison-values {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.95em;
+  }
+  
+  .comparison-values .label {
+    display: block;
+    color: #888;
+    font-size: 0.8em;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .comparison-values .value {
+    color: #e0e0e0;
+    font-size: 1.1em;
+    font-weight: 600;
+  }
+  
+  .comparison-diff {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 1.05em;
+  }
+  
+  .comparison-diff .trend-icon {
+    font-size: 1.2em;
+  }
+  
+  .comparison-card.trend-up .comparison-diff {
+    color: #00ff88;
+  }
+  
+  .comparison-card.trend-down .comparison-diff {
+    color: #ff6b9d;
+  }
+  
+  .comparison-card.trend-stable .comparison-diff {
+    color: #ffd700;
+  }
+  
   /* ========== 统计卡片网格 ========== */
   .stats-grid {
     display: grid;

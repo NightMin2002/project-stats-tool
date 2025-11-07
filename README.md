@@ -7,7 +7,19 @@
 > 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具
 > 📈 支持历史对比分析、趋势可视化、50+ 种编程语言
 > 🌙 Night Theme 暗黑主题 + 粒子动画 + 交互式文件树
+> ✨ **Unreleased 增强**：新增 HTML “历史对比分析”卡片区块（可折叠）
 > ✨ **v2.12.0 新增**：性能优化 + 50+ 语言支持 + 命令行增强
+
+---
+
+## 🔄 最新增强（Unreleased）
+新增 HTML 报告“历史对比分析”区块：
+- 自动对比上一轮统计：文件数 / 总字符 / 总行 / 代码行 / 注释行 / Tokens
+- 卡片展示增量与百分比变化（📈 上升 / 📉 下降 / ➡️ 持平）
+- 一键“隐藏对比 / 显示对比”按钮，长报告浏览更清爽
+- 与历史趋势图并行展示，需 ≥2 条历史记录
+- 数据统一来源：`results/history.json`
+在第二次运行后打开：`results/最新/可视化报告.html` 即可查看。
 
 ---
 
@@ -51,11 +63,12 @@ node src/project-stats.js --version    # 显示版本信息
 - **错误处理增强** - 更智能的错误提示和恢复机制
 - **数据安全** - 自动备份历史记录，防止数据丢失
 
-### 📈 历史对比
-- **自动记录** - 每次统计自动保存历史
-- **实时对比** - 控制台显示与上次的差异
-- **趋势图表** - HTML 报告包含历史趋势曲线
-- **版本管理** - 查看/对比任意历史版本
+### 📈 历史与对比
+- **自动记录**：每次统计自动保存到 `history.json`
+- **实时对比**：控制台输出与上一轮差异
+- **趋势图表**：总行数 / 文件数 / Tokens / 代码行趋势
+- **可视化对比**：HTML 报告中卡片化展示差异（可折叠）
+- **版本管理**：CLI 支持任意历史版本对比
 
 ### 🎯 智能过滤
 - ✅ 自动识别并排除第三方库（lib、vendor、.min.js 等）
@@ -120,10 +133,11 @@ node src/view-history.js compare 1 5    # 对比第1和第5条
 
 ### HTML 趋势图
 
-当有 ≥2 条历史记录时，打开 `results/最新/可视化报告.html`，自动显示：
+当有 ≥2 条历史记录时，打开 `results/最新/可视化报告.html` 可看到：
 - 📈 代码行数趋势曲线
 - 📊 文件数量变化
 - 💰 Token 估算趋势
+- 🔄 历史对比分析卡片（可“隐藏对比 / 显示对比”）
 
 ---
 
@@ -149,6 +163,32 @@ node src/view-history.js compare 1 5    # 对比第1和第5条
 ## 🔧 技术规格
 
 ### 支持的语言（50+）
+### comparisonData 数据结构（HTML报告中）
+```ts
+interface ChangeMetric {
+	old: number;
+	new: number;
+	diff: number;
+	rate: number;
+	diffFormatted: string;
+	rateFormatted: string;
+	trend: 'up' | 'down' | 'stable';
+}
+
+interface ComparisonData {
+	isFirstRun: boolean;
+	previousTime?: string;
+	previousTag?: string | null;
+	comparison?: {
+		files: ChangeMetric;
+		totalChars: ChangeMetric;
+		totalLines: ChangeMetric;
+		codeLines: ChangeMetric;
+		commentLines: ChangeMetric;
+		tokens: ChangeMetric;
+	};
+}
+```
 
 - **Web前端**: JavaScript, TypeScript, HTML, CSS, Vue, React, Svelte
 - **后端**: Python, Java, Go, Rust, PHP, Ruby, C#, C++, C, Swift, Kotlin
@@ -175,6 +215,15 @@ node src/view-history.js compare 1 5    # 对比第1和第5条
 
 ---
 
+## 🧪 推荐工作流
+1. 第一次运行：生成基础统计与可视化（无对比卡片）
+2. 第二次运行：出现趋势图 + 历史对比卡片
+3. 浏览报告时若需精简视图 → 点击“隐藏对比”按钮折叠
+4. 使用 CLI：`node src/view-history.js compare 2 5` 做跨版本对比
+5. 将 `完整提取.txt` 提供给 AI 做语义检索 / 审查 / 重构建议
+
+---
+
 ## 🔒 安全与隐私
 
 - ✅ **只读操作** - 只读取文件，不做任何修改
@@ -195,7 +244,7 @@ node src/view-history.js compare 1 5    # 对比第1和第5条
 
 ## 🤝 贡献
 
-欢迎贡献！请 Fork 本仓库并提交 Pull Request。
+欢迎贡献！请 Fork 本仓库并提交 Pull Request，或提交改进“历史对比”与“趋势分析”的想法。
 
 ---
 

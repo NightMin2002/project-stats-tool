@@ -18,8 +18,10 @@
  * @param {Object} fileTreeData - 文件树数据
  * @param {Function} formatNumber - 数字格式化函数
  * @param {Function} formatSize - 文件大小格式化函数
- * @param {Object} libs - 内嵌的第三方库（Chart.js, Particles.js）
- * @param {Object|null} trendData - 历史趋势数据（可选）
+ * @param {Object} options - 可选配置对象
+ * @param {Object} [options.libs] - 内嵌的第三方库（Chart.js, Particles.js）
+ * @param {Object|null} [options.trendData] - 历史趋势数据
+ * @param {Object|null} [options.comparisonData] - 历史对比数据
  * @returns {string} 完整的 HTML 报告字符串
  */
 
@@ -37,23 +39,28 @@ const {
   generateFileTreeSection,
   generateLanguageStatsTable,
   generateComplexitySection,
+  generateComparisonSection,
   generateFooter
 } = require('./templates/components.js');
 
 module.exports = function generateEnhancedHTML(
-  stats, 
-  timestamp, 
-  fileTreeData, 
-  formatNumber, 
-  formatSize, 
-  libs = {}, 
-  trendData = null
+  stats,
+  timestamp,
+  fileTreeData,
+  formatNumber,
+  formatSize,
+  options = {}
 ) {
+  const {
+    libs = {},
+    trendData = null,
+    comparisonData = null
+  } = options;
   // 准备数据
   const projectName = stats.project.name;
   const projectType = stats.project.type;
   const hasLanguageStats = Object.keys(stats.languageStats || {}).length > 0;
-  const hasTrendData = trendData && trendData.totalLines && trendData.totalLines.length > 1;
+  const hasTrendData = (trendData?.totalLines?.length || 0) > 1;
   
   // 生成各个部分
   const headSection = generateHead(projectName, libs);
@@ -66,6 +73,7 @@ module.exports = function generateEnhancedHTML(
   const fileTreeSection = generateFileTreeSection();
   const languageTableSection = generateLanguageStatsTable(stats.languageStats || {}, formatNumber, formatSize);
   const complexitySection = generateComplexitySection(stats, formatNumber, formatSize);
+  const comparisonSection = generateComparisonSection(comparisonData, formatNumber);
   const footerSection = generateFooter(timestamp);
   
   // 生成JavaScript脚本
@@ -79,6 +87,7 @@ module.exports = function generateEnhancedHTML(
   <div class="container">
     ${headerSection}
     ${metaSection}
+    ${comparisonSection}
     ${coreStatsSection}
     ${chartSection}
     ${languageCodeSection}

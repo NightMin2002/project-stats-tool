@@ -1,5 +1,32 @@
 # 📋 更新日志
 
+## [Unreleased] - 2025-11-07 - 可视化历史对比增强
+
+### 🔄 新增功能
+- HTML 报告增加“历史对比分析”区块（自动对比上一轮统计：文件数 / 总字符 / 总行 / 代码行 / 注释行 / Tokens）
+- 以卡片形式展示增量与百分比变化，并通过趋势图标（📈 / 📉 / ➡️）指示状态
+- 一键“隐藏对比 / 显示对比”按钮，支持折叠该区块，提升浏览长报告时的可控性
+
+### 📈 趋势协同
+- 历史趋势图与对比卡片并行展示（需要 ≥ 2 条历史记录）
+- 数据统一来源自 `results/history.json`，保证一致性与可追溯性
+
+### 🧩 模块化改动
+- 新组件：`generateComparisonSection()`（`templates/components.js`）
+- 新样式：对比卡片与开关按钮（`templates/styles.css.js`）
+- 新逻辑：折叠/展开绑定（`templates/scripts.js`）
+- 模板签名重构：`html-report-template.js` 改为接收 `options`（包含 `trendData` 与 `comparisonData`）
+- 生成器扩展：`html-generator.js` 在非首次统计时传入对比数据
+
+### 📚 文档更新
+- `docs/AI-项目结构说明.md` 补充 comparisonData 与 options 结构说明
+- `docs/使用说明.txt` 增加对比区块使用示例与交互说明
+
+### ✅ 使用提示
+运行第 2 次及以后即可在 HTML 中看到“历史对比分析”区块；需折叠时点击右上角按钮即可。
+
+---
+
 ## [v2.12.0] - 2025-11-04 - 性能与功能增强版
 
 ### 🔧 性能优化
