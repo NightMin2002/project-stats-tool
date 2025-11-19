@@ -65,12 +65,20 @@ function shouldExclude(filePath, config, gitignorePatterns) {
   }
   
   // 智能排除：如果目录包含 project-stats.js，但不是根目录本身，则排除该目录
+  // 注意：这里使用同步 fs.existsSync 是为了保持 shouldExclude 为同步函数
+  // 因为它在遍历循环中被频繁调用，且通常只检查路径字符串
+  // 只有这个特定的智能排除逻辑需要文件系统访问
+  // 在大规模项目中，这可能成为性能瓶颈，但在当前架构下是可以接受的
   const dirPath = path.dirname(filePath);
-  const isToolDir = fs.existsSync(path.join(dirPath, 'project-stats.js'));
-  const isRootDir = path.resolve(dirPath) === path.resolve(config.rootDir);
-  
-  if (isToolDir && !isRootDir) {
-    return true;
+  try {
+    const isToolDir = fs.existsSync(path.join(dirPath, 'project-stats.js'));
+    const isRootDir = path.resolve(dirPath) === path.resolve(config.rootDir);
+    
+    if (isToolDir && !isRootDir) {
+      return true;
+    }
+  } catch (e) {
+    // 忽略文件系统错误
   }
   
   // 检查 .gitignore 规则
@@ -110,9 +118,39 @@ function isDocFile(filePath, config) {
   return config.extensions.docs.includes(ext);
 }
 
+/**
+ * 检测文件是否为二进制文件
+ * 通过读取文件前 4KB 内容并检查空字节来判断
+ * @param {string} filePath - 文件路径
+ * @returns {Promise<boolean>}
+ */
+async function isBinaryFile(filePath) {
+  let handle;
+  try {
+    handle = await fs.promises.open(filePath, 'r');
+    const buffer = Buffer.alloc(4096);
+    const { bytesRead } = await handle.read(buffer, 0, 4096, 0);
+    
+    // 检查空字节 (Null Byte)
+    // 文本文件通常不包含空字节，而二进制文件通常包含
+    for (let i = 0; i < bytesRead; i++) {
+      if (buffer[i] === 0) {
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    // 如果读取失败，假设不是二进制文件（或者让上层处理错误）
+    return false;
+  } finally {
+    if (handle) await handle.close();
+  }
+}
+
 module.exports = {
   isLibraryFile,
   shouldExclude,
   isCodeFile,
-  isDocFile
+  isDocFile,
+  isBinaryFile
 };

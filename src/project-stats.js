@@ -249,90 +249,95 @@ function printChangeItem(label, change) {
 /**
  * 主函数
  */
-function main() {
-  // 解析命令行参数
-  const { targetDir } = parseArguments();
-  
-  // 检查目录是否存在
-  if (!fs.existsSync(targetDir)) {
-    console.error(`❌ 错误: 目录不存在: ${targetDir}`);
+async function main() {
+  try {
+    // 解析命令行参数
+    const { targetDir } = parseArguments();
+    
+    // 检查目录是否存在
+    if (!fs.existsSync(targetDir)) {
+      console.error(`❌ 错误: 目录不存在: ${targetDir}`);
+      process.exit(1);
+    }
+    
+    console.log(`\n🔍 正在分析项目: ${targetDir}\n`);
+    
+    // 初始化配置和数据
+    const config = createConfig(targetDir);
+    const gitignorePatterns = loadGitignorePatterns(targetDir);
+    const stats = initStats(targetDir);
+    
+    // 扫描项目 (异步)
+    await scanProject(stats, config, gitignorePatterns);
+    
+    // 计算统计数据
+    stats.project.type = detectProjectType(stats, config);
+    calculateComplexity(stats);
+    calculateTokens(stats, config);
+    
+    // 初始化历史管理器
+    const resultsDir = path.join(__dirname, '../results');
+    if (!fs.existsSync(resultsDir)) {
+      fs.mkdirSync(resultsDir, { recursive: true });
+    }
+    
+    const historyManager = new HistoryManager(resultsDir);
+    
+    // 保存本次记录到历史
+    const currentRecordForComparison = historyManager.saveRecord(stats);
+    
+    // 获取上次统计结果进行对比
+    const previousRecord = historyManager.getPreviousRecord();
+    const comparison = historyManager.compare(stats, previousRecord);
+    
+    // 打印结果
+    printResults(stats);
+    
+    // 打印对比结果
+    if (!comparison.isFirstRun) {
+      printComparison(comparison, historyManager);
+    }
+    
+    // 生成所有报告
+    const fileTreeData = buildFileTreeData(config.rootDir, config, gitignorePatterns);
+    
+    const reports = {
+      markdown: generateMarkdownReport(stats),
+      structure: generateProjectStructure(stats, config, gitignorePatterns),
+      fileList: generateFileList(stats),
+      fullText: extractAllText(stats),
+      html: generateHTMLReport(
+        stats,
+        fileTreeData,
+        historyManager,
+        comparison.isFirstRun ? null : comparison
+      )
+    };
+    
+    // 保存报告
+    const { folderTimestamp } = saveAllReports(reports, stats, resultsDir);
+    
+    // 打印历史记录信息
+    if (currentRecordForComparison) {
+      console.log(`\n💾 历史记录已保存 (ID: ${currentRecordForComparison.id})`);
+      console.log(`   📊 历史记录总数: ${historyManager.getRecordCount()} 条`);
+      console.log(`   📁 历史文件: ${path.join(resultsDir, 'history.json')}`);
+    }
+    
+    if (historyManager.getRecordCount() >= 2) {
+      console.log(`   📈 包含历史趋势图 (${historyManager.getRecordCount()} 条记录)`);
+    }
+    
+    console.log(`\n📌 快速访问:`);
+    console.log(`   📂 本次结果: results/${folderTimestamp}/`);
+    console.log(`   📂 最新结果: results/最新/`);
+    console.log(`   🎨 可视化报告: results/最新/可视化报告.html ⭐ 推荐在浏览器中打开！\n`);
+    
+    console.log(`✨ 统计完成！所有结果已保存到 results 文件夹\n`);
+  } catch (error) {
+    console.error('❌ 发生未捕获的错误:', error);
     process.exit(1);
   }
-  
-  console.log(`\n🔍 正在分析项目: ${targetDir}\n`);
-  
-  // 初始化配置和数据
-  const config = createConfig(targetDir);
-  const gitignorePatterns = loadGitignorePatterns(targetDir);
-  const stats = initStats(targetDir);
-  
-  // 扫描项目
-  scanProject(stats, config, gitignorePatterns);
-  
-  // 计算统计数据
-  stats.project.type = detectProjectType(stats, config);
-  calculateComplexity(stats);
-  calculateTokens(stats, config);
-  
-  // 初始化历史管理器
-  const resultsDir = path.join(__dirname, '../results');
-  if (!fs.existsSync(resultsDir)) {
-    fs.mkdirSync(resultsDir, { recursive: true });
-  }
-  
-  const historyManager = new HistoryManager(resultsDir);
-  
-  // 保存本次记录到历史
-  const currentRecordForComparison = historyManager.saveRecord(stats);
-  
-  // 获取上次统计结果进行对比
-  const previousRecord = historyManager.getPreviousRecord();
-  const comparison = historyManager.compare(stats, previousRecord);
-  
-  // 打印结果
-  printResults(stats);
-  
-  // 打印对比结果
-  if (!comparison.isFirstRun) {
-    printComparison(comparison, historyManager);
-  }
-  
-  // 生成所有报告
-  const fileTreeData = buildFileTreeData(config.rootDir, config, gitignorePatterns);
-  
-  const reports = {
-    markdown: generateMarkdownReport(stats),
-    structure: generateProjectStructure(stats, config, gitignorePatterns),
-    fileList: generateFileList(stats),
-    fullText: extractAllText(stats),
-    html: generateHTMLReport(
-      stats,
-      fileTreeData,
-      historyManager,
-      comparison.isFirstRun ? null : comparison
-    )
-  };
-  
-  // 保存报告
-  const { folderTimestamp } = saveAllReports(reports, stats, resultsDir);
-  
-  // 打印历史记录信息
-  if (currentRecordForComparison) {
-    console.log(`\n💾 历史记录已保存 (ID: ${currentRecordForComparison.id})`);
-    console.log(`   📊 历史记录总数: ${historyManager.getRecordCount()} 条`);
-    console.log(`   📁 历史文件: ${path.join(resultsDir, 'history.json')}`);
-  }
-  
-  if (historyManager.getRecordCount() >= 2) {
-    console.log(`   📈 包含历史趋势图 (${historyManager.getRecordCount()} 条记录)`);
-  }
-  
-  console.log(`\n📌 快速访问:`);
-  console.log(`   📂 本次结果: results/${folderTimestamp}/`);
-  console.log(`   📂 最新结果: results/最新/`);
-  console.log(`   🎨 可视化报告: results/最新/可视化报告.html ⭐ 推荐在浏览器中打开！\n`);
-  
-  console.log(`✨ 统计完成！所有结果已保存到 results 文件夹\n`);
 }
 
 // 执行主函数

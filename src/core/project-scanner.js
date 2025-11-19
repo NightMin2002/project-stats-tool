@@ -15,11 +15,12 @@ const { analyzeFile } = require('../analyzers/file-analyzer');
  * @param {object} config - 配置对象
  * @param {string[]} gitignorePatterns - gitignore 模式数组
  */
-function walkDirectory(dir, stats, config, gitignorePatterns) {
+async function walkDirectory(dir, stats, config, gitignorePatterns) {
   try {
-    const items = fs.readdirSync(dir);
+    const items = await fs.promises.readdir(dir);
     
-    items.forEach(item => {
+    // 并行处理目录中的所有项
+    await Promise.all(items.map(async (item) => {
       const fullPath = path.join(dir, item);
       
       if (shouldExclude(fullPath, config, gitignorePatterns)) {
@@ -27,10 +28,10 @@ function walkDirectory(dir, stats, config, gitignorePatterns) {
       }
       
       try {
-        const stat = fs.statSync(fullPath);
+        const stat = await fs.promises.stat(fullPath);
         
         if (stat.isDirectory()) {
-          walkDirectory(fullPath, stats, config, gitignorePatterns);
+          await walkDirectory(fullPath, stats, config, gitignorePatterns);
         } else if (stat.isFile()) {
           const ext = path.extname(fullPath).toLowerCase();
           if (isCodeFile(fullPath, config) || isDocFile(fullPath, config)) {
@@ -39,7 +40,7 @@ function walkDirectory(dir, stats, config, gitignorePatterns) {
               stats.files.excluded.libraries++;
               stats.files.excluded.total++;
             } else {
-              analyzeFile(fullPath, stats, config);
+              await analyzeFile(fullPath, stats, config);
             }
           }
         }
@@ -54,7 +55,7 @@ function walkDirectory(dir, stats, config, gitignorePatterns) {
           console.warn(`⚠️  无法访问: ${fullPath} (${itemError.message})`);
         }
       }
-    });
+    }));
   } catch (error) {
     // 处理目录级别的错误
     if (error.code === 'EACCES' || error.code === 'EPERM') {
@@ -74,8 +75,8 @@ function walkDirectory(dir, stats, config, gitignorePatterns) {
  * @param {object} config - 配置对象
  * @param {string[]} gitignorePatterns - gitignore 模式数组
  */
-function scanProject(stats, config, gitignorePatterns) {
-  walkDirectory(config.rootDir, stats, config, gitignorePatterns);
+async function scanProject(stats, config, gitignorePatterns) {
+  await walkDirectory(config.rootDir, stats, config, gitignorePatterns);
 }
 
 module.exports = {

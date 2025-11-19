@@ -8,7 +8,7 @@ const path = require('path');
 const { LANGUAGE_MAP } = require('../config');
 const { countChineseChars, countEnglishWords } = require('./text-analyzer');
 const { analyzeCodeLine } = require('./code-analyzer');
-const { isCodeFile } = require('../utils/file-utils');
+const { isCodeFile, isBinaryFile } = require('../utils/file-utils');
 const { formatSize } = require('../utils/formatters');
 
 // 最大文件大小限制（50MB）
@@ -20,17 +20,25 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024;
  * @param {object} stats - 统计数据对象
  * @param {object} config - 配置对象
  */
-function analyzeFile(filePath, stats, config) {
+async function analyzeFile(filePath, stats, config) {
   try {
     // 先检查文件大小，避免读取超大文件导致内存溢出
-    const fileStat = fs.statSync(filePath);
+    const fileStat = await fs.promises.stat(filePath);
     if (fileStat.size > MAX_FILE_SIZE) {
       console.warn(`⚠️  文件过大，跳过: ${path.relative(config.rootDir, filePath)} (${formatSize(fileStat.size)})`);
       stats.files.excluded.total++;
       return;
     }
+
+    // 检查是否为二进制文件
+    if (await isBinaryFile(filePath)) {
+      // console.warn(`⚠️  二进制文件，跳过: ${path.relative(config.rootDir, filePath)}`);
+      // 可以在这里决定是否统计为"排除的文件"或者只是不进行文本分析
+      // 目前保持与旧版本一致的行为：跳过
+      return;
+    }
     
-    const content = fs.readFileSync(filePath, 'utf8');
+    const content = await fs.promises.readFile(filePath, 'utf8');
     const ext = path.extname(filePath).toLowerCase();
     const lines = content.split('\n');
     const fileSize = content.length;

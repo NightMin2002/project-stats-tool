@@ -9,18 +9,19 @@
 ```
 project-stats-tool/
 ├── src/                          # 源代码目录
-│   ├── project-stats.js          # 🎯 主入口（267行）
+│   ├── project-stats.js          # 🎯 主入口（异步执行流程）
 │   ├── config.js                 # ⚙️ 配置管理（177行）
 │   ├── history-manager.js        # 📊 历史记录管理器
 │   ├── view-history.js           # 📈 历史查看CLI工具
 │   ├── html-report-template.js   # 🎨 HTML总模板
 │   │
 │   ├── core/                     # 核心业务逻辑
-│   │   ├── project-scanner.js    # 项目扫描器（递归遍历目录）
+│   │   ├── project-scanner.js    # 项目扫描器（异步并行递归遍历）
+│   │   └── stats-calculator.js   # 统计计算器（复杂度、Tokens、类型检测）
 │   │   └── stats-calculator.js   # 统计计算器（复杂度、Tokens、类型检测）
 │   │
 │   ├── analyzers/                # 数据分析模块
-│   │   ├── file-analyzer.js      # 文件分析器（整合代码+文本分析）
+│   │   ├── file-analyzer.js      # 文件分析器（异步I/O + 二进制检测）
 │   │   ├── code-analyzer.js      # 代码分析器（行类型判断、注释识别）
 │   │   └── text-analyzer.js      # 文本分析器（中英文统计）
 │   │
@@ -36,7 +37,7 @@ project-stats-tool/
 │   │   └── components.js         # HTML组件生成器
 │   │
 │   └── utils/                    # 通用工具
-│       ├── file-utils.js         # 文件类型判断、路径处理、排除规则
+│       ├── file-utils.js         # 文件类型判断、路径处理、排除规则、二进制检测
 │       └── formatters.js         # 数字和文件大小格式化
 │
 ├── lib/                          # 第三方库（本地化）
@@ -66,20 +67,20 @@ project-stats-tool/
 
 ### 入口层
 
-#### [`project-stats.js`](../src/project-stats.js:1) - 主入口（267行）
+#### [`project-stats.js`](../src/project-stats.js:1) - 主入口
 **职责**: 
-- 协调所有模块的执行流程
+- 协调所有模块的执行流程（异步）
 - 控制台输出（`printResults()`, `printComparison()`）
 - 历史记录管理（初始化、保存、对比）
 - 报告生成和保存
 
 **核心流程**:
 ```
-初始化配置 → 扫描项目 → 计算统计 → 历史管理 → 生成报告 → 保存输出 → 控制台输出
+初始化配置 → 异步扫描项目 → 计算统计 → 历史管理 → 生成报告 → 保存输出 → 控制台输出
 ```
 
 **关键函数**:
-- `main()` - 主函数
+- `main()` - 异步主函数 (`async/await`)
 - `printResults(stats)` - 打印统计结果
 - `printComparison(comparison, historyManager)` - 打印对比分析
 
@@ -87,7 +88,7 @@ project-stats-tool/
 
 ### 配置层
 
-#### [`config.js`](../src/config.js:1) - 配置管理（177行）
+#### [`config.js`](../src/config.js:1) - 配置管理
 **职责**:
 - 集中管理所有配置项和常量
 - 定义语言映射（40+种编程语言）
@@ -115,22 +116,23 @@ module.exports = {
 
 ### 核心层
 
-#### [`core/project-scanner.js`](../src/core/project-scanner.js:1) - 项目扫描器（67行）
+#### [`core/project-scanner.js`](../src/core/project-scanner.js:1) - 项目扫描器
 **职责**:
-- 递归遍历项目目录
+- 异步递归遍历项目目录
+- 并行处理文件扫描
 - 应用排除规则过滤文件
 - 调用文件分析器处理有效文件
 
 **核心函数**:
-- `scanProject(stats, config, gitignorePatterns)` - 扫描入口
-- `walkDirectory(dir, stats, config, gitignorePatterns)` - 递归遍历
+- `scanProject(stats, config, gitignorePatterns)` - 异步扫描入口
+- `walkDirectory(dir, stats, config, gitignorePatterns)` - 异步递归遍历，使用 `Promise.all` 并行处理
 
 **工作流程**:
 ```
-遍历目录 → shouldExclude()判断 → isLibraryFile()判断 → analyzeFile()分析
+异步遍历目录 → 并行处理子项 → shouldExclude()判断 → isLibraryFile()判断 → analyzeFile()异步分析
 ```
 
-#### [`core/stats-calculator.js`](../src/core/stats-calculator.js:1) - 统计计算器（85行）
+#### [`core/stats-calculator.js`](../src/core/stats-calculator.js:1) - 统计计算器
 **职责**:
 - 计算复杂度指标（平均行长、平均文件大小、最长行）
 - 估算 Token 数量
@@ -150,22 +152,23 @@ tokens = (中文字符 / 1.5) + (英文单词 / 1.3) + (代码字符 / 3.5)
 
 ### 分析层
 
-#### [`analyzers/file-analyzer.js`](../src/analyzers/file-analyzer.js:1) - 文件分析器（127行）
+#### [`analyzers/file-analyzer.js`](../src/analyzers/file-analyzer.js:1) - 文件分析器
 **职责**:
-- 读取文件内容
+- 异步读取文件内容
+- 智能检测二进制文件并跳过
 - 整合代码分析和文本分析
 - 更新统计数据（stats对象）
 - 维护文件列表和语言统计
 
 **核心函数**:
-- `analyzeFile(filePath, stats, config)` - 主分析函数
+- `analyzeFile(filePath, stats, config)` - 异步主分析函数
 
 **工作流程**:
 ```
-读取文件 → analyzeCode()分析代码 → analyzeText()分析文本 → 更新stats
+检查文件大小 → 检测二进制文件(isBinaryFile) → 异步读取内容 → analyzeCode()分析代码 → analyzeText()分析文本 → 更新stats
 ```
 
-#### [`analyzers/code-analyzer.js`](../src/analyzers/code-analyzer.js:1) - 代码分析器（46行）
+#### [`analyzers/code-analyzer.js`](../src/analyzers/code-analyzer.js:1) - 代码分析器
 **职责**:
 - 逐行分析代码类型（代码行、注释行、空白行）
 - 支持多种注释格式（`//`, `/* */`, `#`, `<!--`, 等）
@@ -180,7 +183,7 @@ tokens = (中文字符 / 1.5) + (英文单词 / 1.3) + (代码字符 / 3.5)
 - Python/Shell: `#`
 - HTML/XML: `<!-- -->`
 
-#### [`analyzers/text-analyzer.js`](../src/analyzers/text-analyzer.js:1) - 文本分析器（32行）
+#### [`analyzers/text-analyzer.js`](../src/analyzers/text-analyzer.js:1) - 文本分析器
 **职责**:
 - 统计中文字符数
 - 统计英文单词数
@@ -213,7 +216,7 @@ tokens = (中文字符 / 1.5) + (英文单词 / 1.3) + (代码字符 / 3.5)
 - `lib/chart.min.js` - 图表库
 - `lib/particles.min.js` - 粒子动画
 
-#### [`generators/text-generator.js`](../src/generators/text-generator.js:1) - 文本生成器（269行）
+#### [`generators/text-generator.js`](../src/generators/text-generator.js:1) - 文本生成器
 **职责**:
 - 生成 Markdown 统计报告
 - 生成文件列表（TXT）
@@ -224,7 +227,7 @@ tokens = (中文字符 / 1.5) + (英文单词 / 1.3) + (代码字符 / 3.5)
 - `generateFileList(stats)` - 生成文件列表.txt
 - `extractAllText(stats)` - 生成完整提取.txt
 
-#### [`generators/tree-generator.js`](../src/generators/tree-generator.js:1) - 树生成器（182行）
+#### [`generators/tree-generator.js`](../src/generators/tree-generator.js:1) - 树生成器
 **职责**:
 - 生成 ASCII 格式的目录树（TXT）
 - 生成 JSON 格式的文件树（用于 HTML 交互）
@@ -243,7 +246,7 @@ tokens = (中文字符 / 1.5) + (英文单词 / 1.3) + (代码字符 / 3.5)
 }
 ```
 
-#### [`generators/output-manager.js`](../src/generators/output-manager.js:1) - 输出管理器（125行）
+#### [`generators/output-manager.js`](../src/generators/output-manager.js:1) - 输出管理器
 **职责**:
 - 统一管理所有文件的保存逻辑
 - 创建时间戳文件夹
@@ -312,7 +315,7 @@ type Change = {
 - `templates/scripts.js` 导出 `generateScripts(stats, fileTreeData, trendData)`
 - `templates/components.js` 导出各组件生成器
 
-#### [`templates/styles.css.js`](../src/templates/styles.css.js:1) - CSS样式模块（588行）
+#### [`templates/styles.css.js`](../src/templates/styles.css.js:1) - CSS样式模块
 **职责**:
 - 提供完整的 Night Theme CSS 样式
 - 粒子背景、卡片、图表、文件树等所有样式
@@ -388,17 +391,19 @@ module.exports = {
 
 ### 工具层
 
-#### [`utils/file-utils.js`](../src/utils/file-utils.js:1) - 文件工具（113行）
+#### [`utils/file-utils.js`](../src/utils/file-utils.js:1) - 文件工具
 **职责**:
 - 文件类型判断
 - 路径处理
 - 排除规则应用（多层过滤机制）
+- **二进制文件检测** (新增)
 
 **核心函数**:
 - `shouldExclude(fullPath, config, gitignorePatterns)` - 判断是否应排除
 - `isCodeFile(fullPath, config)` - 是否为代码文件
 - `isDocFile(fullPath, config)` - 是否为文档文件
 - `isLibraryFile(fullPath, config, strictMode)` - 是否为第三方库文件
+- `isBinaryFile(filePath)` - 异步检测文件是否为二进制（读取前4KB检查空字节）
 
 **排除机制（3层过滤）**:
 ```
@@ -407,7 +412,7 @@ module.exports = {
 第3层: 库文件特征（.min.js、jquery等）
 ```
 
-#### [`utils/formatters.js`](../src/utils/formatters.js:1) - 格式化工具（31行）
+#### [`utils/formatters.js`](../src/utils/formatters.js:1) - 格式化工具
 **职责**:
 - 数字格式化（千分位）
 - 文件大小格式化（B/KB/MB）
@@ -526,17 +531,18 @@ module.exports = {
 ## 🔄 执行流程
 
 ```
-用户执行 → main()
+用户执行 → main() (Async)
     ↓
 [1] 配置初始化
     - createConfig()
     - loadGitignorePatterns()
     - initStats()
     ↓
-[2] 项目扫描
+[2] 项目扫描 (Async & Parallel)
     - scanProject()
-      └─ walkDirectory() 递归遍历
-         └─ analyzeFile() 分析每个文件
+      └─ walkDirectory() 异步递归遍历
+         └─ analyzeFile() 异步分析每个文件
+            └─ isBinaryFile() 检测二进制
     ↓
 [3] 统计计算
     - detectProjectType()
@@ -603,6 +609,7 @@ module.exports = {
 3. **保持独立性**: 每个模块应尽可能独立，减少跨模块依赖
 4. **错误处理**: 文件读取失败时静默忽略，不中断整体流程
 5. **浏览器兼容**: HTML 报告支持现代浏览器（Chrome、Firefox、Edge）
+6. **异步操作**: 核心扫描和分析流程已改为异步，修改时请注意使用 `async/await`
 
 ---
 
@@ -624,6 +631,6 @@ module.exports = {
 
 ---
 
-**最后更新**: 2025-11-04  
-**版本**: v2.11.0  
+**最后更新**: 2025-11-19  
+**版本**: v2.12.0  
 **维护**: Ω Code Agent
