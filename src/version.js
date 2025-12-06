@@ -3,8 +3,8 @@
  * 统一管理项目版本号
  */
 
-const VERSION = '2.12.1';
-const VERSION_NAME = '工作流优化版';
+const VERSION = '3.0.0';
+const VERSION_NAME = '视觉革命版';
 const RELEASE_DATE = '2025-12-06';
 
 /**

@@ -1,20 +1,21 @@
 # 🌙 项目统计工具 (Project Stats Tool)
 
-[![Version](https://img.shields.io/badge/version-2.12.1-blue.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com)
 [![Node](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具
 > 📈 支持历史对比分析、趋势可视化、50+ 种编程语言
-> 🌙 Night Theme 暗黑主题 + 粒子动画 + 交互式文件树
-> ✨ **v2.12.1 增强**：工作流优化 + 极速启动 + 手动更新管理
+> 🌙 **Night Theme V3**: 动态月亮动画 + 玻璃拟态 UI + 全 SVG 图标系统
+> ✨ **v3.0.0 全新发布**：视觉与交互的全面进化
 
 ---
 
-## 🔄 最新增强（v2.12.1）
-- **🚀 极速启动**：重构启动流程，`统计项目.bat` 现在直接运行核心程序，跳过网络检查，实现秒开。
-- **🔧 维护分离**：新增独立的 `检查更新.bat`，仅在需要时手动更新，不再影响日常使用体验。
-- **📂 历史查看器升级**：`view-history.js` 支持自动扫描和选择多项目历史记录。
+## 🔄 最新增强（v3.0.0）
+- **🎨 视觉革命**：全面引入 Glassmorphism（玻璃拟态）设计风格，配合精美的动态月亮动画，打造沉浸式夜间模式体验。
+- **💎 SVG 图标**：内置定制化 SVG 图标库，彻底取代 Emoji，在任何分辨率下都清晰锐利，风格更加统一专业。
+- **📱 响应式布局**：基于 CSS Grid 重构页面结构，完美适配从超宽屏到移动端的各种设备。
+- **✨ 交互升级**：文件树支持箭头动画，图表增加防裁剪保护，悬停效果更加细腻流畅。
 
 ---
 
@@ -68,12 +69,13 @@ node src/project-stats.js --version    # 显示版本信息
 - ✅ 智能排除 `node_modules`、`.git`、`dist` 等
 - ✅ **智能自身排除**：工具会自动识别自己的代码，防止自我统计
 
-### 🌙 可视化报告
-- **Night Theme** - 赛博朋克风格暗黑主题
+### 🌙 可视化报告 (V3.0.0)
+- **Night Theme V3** - 玻璃拟态风格 + 动态月亮动画
+- **全 SVG 图标** - 高清矢量图标系统
 - **粒子动画** - 交互式动态背景
 - **趋势图表** - Chart.js 驱动的历史数据可视化
-- **文件树** - 可折叠/展开的项目结构视图
-- **语言级图表** - 按语言的代码量对比图 🆕
+- **文件树** - SVG 风格的可折叠项目结构视图
+- **语言级图表** - 按语言的代码量对比图
 
 ---
 
@@ -85,7 +87,7 @@ node src/project-stats.js --version    # 显示版本信息
 results/
 ├── MyProject1/                    ← 按项目名自动分类
 │   ├── 最新/
-│   │   ├── 可视化报告.html        ← ⭐ 推荐在浏览器中打开
+│   │   ├── 可视化报告.html        ← ⭐ 推荐在浏览器中打开 (V3.0.0 体验最佳)
 │   │   ├── 统计数据.json
 │   │   ├── 统计报告.md
 │   │   └── ...
@@ -232,6 +234,6 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 **Made with ❤️ and 🌙 by Ω Code Agent**
 
-⭐ **[立即体验 v2.12.1 性能增强版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
+⭐ **[立即体验 v3.0.0 视觉革命版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
 
 </div>

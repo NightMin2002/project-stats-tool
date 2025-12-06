@@ -20,23 +20,23 @@ project-stats-tool/
 │   ├── core/                     # 核心业务逻辑
 │   │   ├── project-scanner.js    # 项目扫描器（异步并行、readdir优化）
 │   │   └── stats-calculator.js   # 统计计算器（复杂度、Tokens、类型检测）
-│   │
+│   │   │
 │   ├── analyzers/                # 数据分析模块
 │   │   ├── file-analyzer.js      # 文件分析器（异步I/O + 二进制检测）
 │   │   ├── code-analyzer.js      # 代码分析器（行类型判断、注释识别）
 │   │   └── text-analyzer.js      # 文本分析器（中英文统计）
-│   │
+│   │   │
 │   ├── generators/               # 报告生成器
 │   │   ├── html-generator.js     # HTML可视化报告生成
 │   │   ├── text-generator.js     # Markdown/TXT报告生成
 │   │   ├── tree-generator.js     # 目录树和文件树生成
 │   │   └── output-manager.js     # 统一文件保存管理（并行写入）
-│   │
-│   ├── templates/                # HTML模板组件（模块化v2.11.0）
-│   │   ├── styles.css.js         # Night Theme CSS样式
-│   │   ├── scripts.js            # 前端JavaScript逻辑
-│   │   └── components.js         # HTML组件生成器
-│   │
+│   │   │
+│   ├── templates/                # HTML模板组件（Night Theme V3）
+│   │   ├── styles.css.js         # CSS 样式 (Grid布局, Glassmorphism, 动画)
+│   │   ├── scripts.js            # JS 逻辑 (Chart.js配置, 交互, 粒子)
+│   │   └── components.js         # HTML 组件 (SVG图标集, 结构生成)
+│   │   │
 │   └── utils/                    # 通用工具
 │       ├── file-utils.js         # 文件类型判断、路径处理、排除规则、二进制检测
 │       └── formatters.js         # 数字和文件大小格式化
@@ -64,7 +64,7 @@ project-stats-tool/
 
 ---
 
-## 🎯 模块职责 (v2.12.0)
+## 🎯 模块职责 (v2.12.0 + V3 UI)
 
 ### 入口层
 
@@ -79,6 +79,28 @@ project-stats-tool/
 ```
 初始化配置 → 异步扫描项目 → 计算统计 → 历史管理(含备份) → 生成报告 → 并行保存输出 → 控制台输出
 ```
+
+---
+
+### 模板层 (Night Theme V3)
+
+#### [`templates/components.js`](../src/templates/components.js:1) - HTML 组件
+**职责 (v3.0.0)**:
+- **SVG 图标集**: 内置完整的 SVG 图标定义 (`ICONS` 对象)，取代 Emoji。
+- **组件生成**: 提供 `generateHeader`, `generateCoreStats`, `generateFileTreeSection` 等函数。
+- **结构定义**: 定义基于 Grid 的现代页面结构。
+
+#### [`templates/styles.css.js`](../src/templates/styles.css.js:1) - CSS 样式
+**职责 (v3.0.0)**:
+- **视觉风格**: 定义 Glassmorphism（玻璃拟态）样式、CSS 变量主题色。
+- **动画效果**: 实现 `moonFloat` 月亮悬浮动画、卡片悬停效果。
+- **布局系统**: 使用 CSS Grid 实现响应式布局，适配移动端。
+
+#### [`templates/scripts.js`](../src/templates/scripts.js:1) - 前端交互
+**职责 (v3.0.0)**:
+- **图表配置**: 配置 Chart.js 的颜色、字体、Tooltip 样式，添加 `layout.padding` 防止裁剪。
+- **文件树交互**: 实现文件树的展开/折叠逻辑，支持 SVG 图标切换。
+- **粒子背景**: 初始化 `particles.js` 动态背景。
 
 ---
 
@@ -178,5 +200,5 @@ project-stats.js (Main)
 ---
 
 **最后更新**: 2025-12-06  
-**版本**: v2.12.0  
+**版本**: v3.0.0 (UI) / v2.12.1 (Core)  
 **维护**: Ω Code Agent
