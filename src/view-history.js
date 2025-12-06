@@ -1,33 +1,15 @@
 /**
- * 历史记录查看器 v1.1
+ * 历史记录查看器 v2.5
  * 用于查看、管理和导出历史统计数据
+ * v2.5 更新：支持多项目目录结构
  */
 
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 
-const historyFile = path.join(__dirname, 'results', 'history.json');
-
-/**
- * 加载历史数据
- * @returns {Object|null} 历史数据对象，失败时返回 null
- */
-function loadHistory() {
-  if (!fs.existsSync(historyFile)) {
-    console.log('❌ 未找到历史记录文件');
-    console.log(`   请先运行 "node project-stats.js" 生成统计数据`);
-    return null;
-  }
-  
-  try {
-    const data = fs.readFileSync(historyFile, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('❌ 读取历史文件失败:', error.message);
-    console.error('   文件可能已损坏，请检查 results/history.json');
-    return null;
-  }
-}
+// 结果根目录
+const resultsRootDir = path.join(__dirname, '../results');
 
 // 格式化数字
 function formatNumber(num) {
@@ -47,15 +29,83 @@ function formatTime(isoString) {
   });
 }
 
+/**
+ * 获取所有已统计的项目列表
+ */
+function getProjects() {
+  if (!fs.existsSync(resultsRootDir)) return [];
+  
+  return fs.readdirSync(resultsRootDir, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name)
+    .filter(name => fs.existsSync(path.join(resultsRootDir, name, 'history.json')));
+}
+
+/**
+ * 加载特定项目的历史数据
+ */
+function loadHistory(projectName) {
+  const historyFile = path.join(resultsRootDir, projectName, 'history.json');
+  
+  if (!fs.existsSync(historyFile)) {
+    return null;
+  }
+  
+  try {
+    const data = fs.readFileSync(historyFile, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error(`❌ 读取项目 ${projectName} 的历史文件失败:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * 显示项目选择菜单
+ */
+async function selectProject(projects) {
+  if (projects.length === 0) {
+    console.log('📭 暂无任何项目的统计记录');
+    return null;
+  }
+
+  if (projects.length === 1) {
+    return projects[0];
+  }
+
+  console.log('\n🔍 发现多个项目记录，请选择要查看的项目：\n');
+  projects.forEach((p, i) => {
+    console.log(`  [${i + 1}] ${p}`);
+  });
+  console.log('');
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    rl.question(`👉 请输入序号 (1-${projects.length}): `, (answer) => {
+      rl.close();
+      const index = parseInt(answer) - 1;
+      if (index >= 0 && index < projects.length) {
+        resolve(projects[index]);
+      } else {
+        console.log('❌ 无效的选择');
+        resolve(null);
+      }
+    });
+  });
+}
+
 // 显示历史记录列表
-function showHistory() {
-  const history = loadHistory();
+function showHistory(projectName, history) {
   if (!history) return;
   
   const records = history.records || [];
   
   if (records.length === 0) {
-    console.log('📭 暂无历史记录');
+    console.log(`📭 项目 ${projectName} 暂无历史记录`);
     return;
   }
   
@@ -63,7 +113,7 @@ function showHistory() {
   console.log('║                    📊 历史统计记录查看器                          ║');
   console.log('╚════════════════════════════════════════════════════════════════════╝\n');
   
-  console.log(`📁 项目: ${history.project || '未知'}`);
+  console.log(`📁 项目: ${projectName}`);
   console.log(`📈 记录总数: ${records.length} 条`);
   console.log(`📅 创建时间: ${formatTime(history.created)}\n`);
   
@@ -87,8 +137,7 @@ function showHistory() {
 }
 
 // 显示详细信息
-function showDetail(index) {
-  const history = loadHistory();
+function showDetail(history, index) {
   if (!history) return;
   
   const records = history.records || [];
@@ -143,8 +192,7 @@ function showDetail(index) {
 }
 
 // 对比两个记录
-function compareRecords(index1, index2) {
-  const history = loadHistory();
+function compareRecords(history, index1, index2) {
   if (!history) return;
   
   const records = history.records || [];
@@ -191,22 +239,38 @@ function compareRecords(index1, index2) {
 }
 
 // 主函数
-function main() {
+async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
   
+  // 1. 获取项目
+  const projects = getProjects();
+  if (projects.length === 0) {
+    console.log('📭 暂无任何历史记录，请先使用“统计项目.bat”分析一个项目。');
+    return;
+  }
+
+  // 2. 选择项目 (如果命令行未指定或指定了 list/detail 等命令但没指定项目名，这里简化处理，先让用户选项目)
+  // 为了简化 CLI 逻辑，这里强制交互式选择项目，除非只且只有一个项目
+  const projectName = await selectProject(projects);
+  if (!projectName) return;
+
+  const history = loadHistory(projectName);
+  if (!history) return;
+
+  // 3. 执行命令
   if (!command || command === 'list') {
-    showHistory();
+    showHistory(projectName, history);
   } else if (command === 'detail' && args[1]) {
-    showDetail(parseInt(args[1]));
+    showDetail(history, parseInt(args[1]));
   } else if (command === 'compare' && args[1] && args[2]) {
-    compareRecords(parseInt(args[1]), parseInt(args[2]));
+    compareRecords(history, parseInt(args[1]), parseInt(args[2]));
   } else {
-    console.log('\n📖 历史记录查看器使用说明:\n');
-    console.log('  node 查看历史.js              # 查看历史记录列表');
-    console.log('  node 查看历史.js list         # 同上');
-    console.log('  node 查看历史.js detail 3     # 查看第3条记录的详细信息');
-    console.log('  node 查看历史.js compare 2 5  # 对比第2条和第5条记录\n');
+    // 默认显示列表
+    showHistory(projectName, history);
+    console.log('\n📖 更多操作:\n');
+    console.log('  node src/view-history.js detail <序号>     # 查看详情');
+    console.log('  node src/view-history.js compare <序号1> <序号2>  # 对比记录\n');
   }
 }
 

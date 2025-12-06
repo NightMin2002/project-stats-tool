@@ -3,8 +3,9 @@
  * 统一管理项目版本号
  */
 
-const VERSION = '2.12.0';
-const VERSION_NAME = '性能与功能增强版';
+const VERSION = '2.12.1';
+const VERSION_NAME = '工作流优化版';
+const RELEASE_DATE = '2025-12-06';
 
 /**
  * 获取完整版本信息
@@ -15,7 +16,7 @@ function getVersionInfo() {
     version: VERSION,
     name: VERSION_NAME,
     fullName: `v${VERSION} - ${VERSION_NAME}`,
-    releaseDate: '2025-11-04'
+    releaseDate: RELEASE_DATE
   };
 }
 
@@ -39,6 +40,7 @@ function getDisplayVersion() {
 module.exports = {
   VERSION,
   VERSION_NAME,
+  RELEASE_DATE,
   getVersionInfo,
   getVersion,
   getDisplayVersion

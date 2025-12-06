@@ -79,6 +79,7 @@ function printHelp() {
   ✅ 历史记录对比分析
   ✅ 可视化 HTML 报告
   ✅ 完整文字内容提取
+  ✅ 支持拖拽文件夹分析 (v2.4)
 
 详细文档: docs/使用说明.txt
 项目主页: https://github.com/NightMin2002/project-stats-tool
@@ -120,8 +121,15 @@ function parseArguments() {
   }
   
   // 获取目标目录
-  const targetDir = args[0]
-    ? path.resolve(args[0])
+  // 支持引号包围的路径（通常命令行会自动处理，但为了稳健性）
+  let targetPathRaw = args[0];
+  if (targetPathRaw) {
+      // 移除可能存在的首尾引号（如果 shell 没有自动移除）
+      targetPathRaw = targetPathRaw.replace(/^"|"$/g, '');
+  }
+
+  const targetDir = targetPathRaw
+    ? path.resolve(targetPathRaw)
     : path.resolve(process.cwd(), '..');
   
   return { targetDir };
@@ -262,8 +270,11 @@ async function main() {
     
     console.log(`\n🔍 正在分析项目: ${targetDir}\n`);
     
-    // 初始化配置和数据
-    const config = createConfig(targetDir);
+    // 获取工具根目录（向上两级：src/ -> project-stats-tool/）
+    const toolRoot = path.resolve(__dirname, '..');
+    
+    // 初始化配置和数据，传入 toolRoot 以支持智能自身排除
+    const config = createConfig(targetDir, toolRoot);
     const gitignorePatterns = loadGitignorePatterns(targetDir);
     const stats = initStats(targetDir);
     
@@ -281,7 +292,8 @@ async function main() {
       fs.mkdirSync(resultsDir, { recursive: true });
     }
     
-    const historyManager = new HistoryManager(resultsDir);
+    // v2.4 更新：传入项目名称，实现多项目历史隔离
+    const historyManager = new HistoryManager(resultsDir, stats.project.name);
     
     // 保存本次记录到历史
     const currentRecordForComparison = historyManager.saveRecord(stats);
@@ -314,14 +326,15 @@ async function main() {
       )
     };
     
-    // 保存报告
-    const { folderTimestamp } = saveAllReports(reports, stats, resultsDir);
+    // 保存报告 (OutputManager 会自动处理按项目名分类)
+    // v2.5 更新：saveAllReports 现在是异步的，需要 await
+    const { folderTimestamp, projectSafeName } = await saveAllReports(reports, stats, resultsDir);
     
     // 打印历史记录信息
     if (currentRecordForComparison) {
       console.log(`\n💾 历史记录已保存 (ID: ${currentRecordForComparison.id})`);
       console.log(`   📊 历史记录总数: ${historyManager.getRecordCount()} 条`);
-      console.log(`   📁 历史文件: ${path.join(resultsDir, 'history.json')}`);
+      console.log(`   📁 历史文件: results/${projectSafeName}/history.json`);
     }
     
     if (historyManager.getRecordCount() >= 2) {
@@ -329,9 +342,9 @@ async function main() {
     }
     
     console.log(`\n📌 快速访问:`);
-    console.log(`   📂 本次结果: results/${folderTimestamp}/`);
-    console.log(`   📂 最新结果: results/最新/`);
-    console.log(`   🎨 可视化报告: results/最新/可视化报告.html ⭐ 推荐在浏览器中打开！\n`);
+    console.log(`   📂 本次结果: results/${projectSafeName}/${folderTimestamp}/`);
+    console.log(`   📂 最新结果: results/${projectSafeName}/最新/`);
+    console.log(`   🎨 可视化报告: results/${projectSafeName}/最新/可视化报告.html ⭐ 推荐在浏览器中打开！\n`);
     
     console.log(`✨ 统计完成！所有结果已保存到 results 文件夹\n`);
   } catch (error) {

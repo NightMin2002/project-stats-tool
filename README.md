@@ -1,22 +1,20 @@
 # 🌙 项目统计工具 (Project Stats Tool)
 
-[![Version](https://img.shields.io/badge/version-2.12.0-blue.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-2.12.1-blue.svg)](https://github.com)
 [![Node](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具
 > 📈 支持历史对比分析、趋势可视化、50+ 种编程语言
 > 🌙 Night Theme 暗黑主题 + 粒子动画 + 交互式文件树
-> ✨ **v2.12.0 增强**：异步并行扫描 + 智能二进制检测 + 性能大幅提升
-> ✨ **v2.11.0 新增**：HTML “历史对比分析”卡片区块（可折叠）
+> ✨ **v2.12.1 增强**：工作流优化 + 极速启动 + 手动更新管理
 
 ---
 
-## 🔄 最新增强（v2.12.0）
-- **🚀 性能飞跃**：核心扫描引擎重构为异步并行架构，大项目扫描速度提升显著。
-- **🛡️ 智能健壮**：新增二进制文件智能检测，自动跳过图片/编译文件，防止乱码和错误。
-- **⚡ 非阻塞 I/O**：全链路异步化改造，文件系统操作不再阻塞主线程。
-- **📊 历史对比**：HTML 报告新增“历史对比分析”区块，自动对比上一轮统计的关键指标。
+## 🔄 最新增强（v2.12.1）
+- **🚀 极速启动**：重构启动流程，`统计项目.bat` 现在直接运行核心程序，跳过网络检查，实现秒开。
+- **🔧 维护分离**：新增独立的 `检查更新.bat`，仅在需要时手动更新，不再影响日常使用体验。
+- **📂 历史查看器升级**：`view-history.js` 支持自动扫描和选择多项目历史记录。
 
 ---
 
@@ -27,12 +25,17 @@
 双击 统计项目.bat → 自动统计当前目录
 ```
 
-### 方法 2：拖放操作
+### 方法 2：拖放操作（推荐）
 ```
 拖动项目文件夹到 统计项目.bat → 统计该项目
 ```
 
-### 方法 3：命令行
+### 方法 3：检查更新
+```
+双击 检查更新.bat → 检查并更新到最新版本
+```
+
+### 方法 4：命令行
 ```bash
 node src/project-stats.js              # 统计当前目录
 node src/project-stats.js ../my-app    # 统计指定项目
@@ -52,16 +55,8 @@ node src/project-stats.js --version    # 显示版本信息
 - **语言分布** - 自动识别 50+ 种编程语言
 - **按语言统计** - 每种编程语言的详细代码量和文件数
 
-### 🆕 v2.12.0 新增特性
-- **异步并行架构** - 采用 `Promise.all` 并行扫描，充分利用 I/O 性能
-- **智能二进制检测** - 读取文件头判断二进制文件，精准排除非代码资源
-- **非阻塞执行** - 全链路 `async/await` 改造，提升工具响应速度
-- **50+ 语言支持** - 新增 Dart、Lua、R、Scala 等语言
-- **命令行增强** - 支持 --help 和 --version 参数
-- **健壮性提升** - 增强的文件系统错误处理，权限问题不再中断扫描
-
 ### 📈 历史与对比
-- **自动记录**：每次统计自动保存到 `history.json`
+- **自动记录**：每次统计自动保存到 `results/<项目名>/history.json`
 - **实时对比**：控制台输出与上一轮差异
 - **趋势图表**：总行数 / 文件数 / Tokens / 代码行趋势
 - **可视化对比**：HTML 报告中卡片化展示差异（可折叠）
@@ -71,7 +66,7 @@ node src/project-stats.js --version    # 显示版本信息
 - ✅ 自动识别并排除第三方库（lib、vendor、.min.js 等）
 - ✅ 自动读取 `.gitignore` 规则
 - ✅ 智能排除 `node_modules`、`.git`、`dist` 等
-- ✅ 真实反映项目代码量（排除率可达 50%+）
+- ✅ **智能自身排除**：工具会自动识别自己的代码，防止自我统计
 
 ### 🌙 可视化报告
 - **Night Theme** - 赛博朋克风格暗黑主题
@@ -88,29 +83,24 @@ node src/project-stats.js --version    # 显示版本信息
 
 ```
 results/
-├── 最新/                          ← 快捷访问（始终是最新结果）
-│   ├── 可视化报告.html            ← ⭐ 推荐在浏览器中打开
-│   ├── 统计数据.json
-│   ├── 统计报告.md
-│   ├── 项目结构.txt
-│   ├── 文件列表.txt
-│   └── 完整提取.txt
+├── MyProject1/                    ← 按项目名自动分类
+│   ├── 最新/
+│   │   ├── 可视化报告.html        ← ⭐ 推荐在浏览器中打开
+│   │   ├── 统计数据.json
+│   │   ├── 统计报告.md
+│   │   └── ...
+│   ├── 2025-11-04_10-30-11/       ← 时间戳历史备份
+│   └── history.json               ← 该项目的历史索引
 │
-├── 2025-11-04_10-30-11/           ← 第1次统计（时间戳文件夹）
-│   ├── 统计数据.json
-│   └── ...
-│
-├── 2025-11-04_14-45-22/           ← 第2次统计
-│   └── ...
-│
-└── history.json                    ← 历史记录索引
+└── MyProject2/
+    ├── 最新/
+    └── ...
 ```
 
 **文件组织优势**：
-- ✅ 按时间自动排序
-- ✅ 文件名简洁易读
-- ✅ 快速访问最新结果
-- ✅ 历史版本一目了然
+- ✅ **多项目隔离**：不同项目的历史记录互不干扰
+- ✅ **清晰有序**：快速找到特定项目的最新报告
+- ✅ **安全备份**：历史记录自动备份，防止数据丢失
 
 ---
 
@@ -130,7 +120,7 @@ node src/view-history.js compare 1 5    # 对比第1和第5条
 
 ### HTML 趋势图
 
-当有 ≥2 条历史记录时，打开 `results/最新/可视化报告.html` 可看到：
+当有 ≥2 条历史记录时，打开 `results/<项目名>/最新/可视化报告.html` 可看到：
 - 📈 代码行数趋势曲线
 - 📊 文件数量变化
 - 💰 Token 估算趋势
@@ -160,33 +150,6 @@ node src/view-history.js compare 1 5    # 对比第1和第5条
 ## 🔧 技术规格
 
 ### 支持的语言（50+）
-### comparisonData 数据结构（HTML报告中）
-```ts
-interface ChangeMetric {
-	old: number;
-	new: number;
-	diff: number;
-	rate: number;
-	diffFormatted: string;
-	rateFormatted: string;
-	trend: 'up' | 'down' | 'stable';
-}
-
-interface ComparisonData {
-	isFirstRun: boolean;
-	previousTime?: string;
-	previousTag?: string | null;
-	comparison?: {
-		files: ChangeMetric;
-		totalChars: ChangeMetric;
-		totalLines: ChangeMetric;
-		codeLines: ChangeMetric;
-		commentLines: ChangeMetric;
-		tokens: ChangeMetric;
-	};
-}
-```
-
 - **Web前端**: JavaScript, TypeScript, HTML, CSS, Vue, React, Svelte
 - **后端**: Python, Java, Go, Rust, PHP, Ruby, C#, C++, C, Swift, Kotlin
 - **函数式**: Elixir, Erlang, Elm, Haskell, Clojure, F#
@@ -213,11 +176,10 @@ interface ComparisonData {
 ---
 
 ## 🧪 推荐工作流
-1. 第一次运行：生成基础统计与可视化（无对比卡片）
-2. 第二次运行：出现趋势图 + 历史对比卡片
-3. 浏览报告时若需精简视图 → 点击“隐藏对比”按钮折叠
-4. 使用 CLI：`node src/view-history.js compare 2 5` 做跨版本对比
-5. 将 `完整提取.txt` 提供给 AI 做语义检索 / 审查 / 重构建议
+1. 将工具文件夹放在任意位置（如桌面）。
+2. 将需要统计的项目文件夹**拖拽**到 `统计项目.bat` 上。
+3. 等待几秒，打开生成的 HTML 报告查看详情。
+4. 下次代码更新后，再次拖拽同一项目，即可自动生成趋势图和对比分析。
 
 ---
 
@@ -270,6 +232,6 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 **Made with ❤️ and 🌙 by Ω Code Agent**
 
-⭐ **[立即体验 v2.12.0 性能增强版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
+⭐ **[立即体验 v2.12.1 性能增强版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
 
 </div>

@@ -64,21 +64,38 @@ function shouldExclude(filePath, config, gitignorePatterns) {
     }
   }
   
-  // 智能排除：如果目录包含 project-stats.js，但不是根目录本身，则排除该目录
-  // 注意：这里使用同步 fs.existsSync 是为了保持 shouldExclude 为同步函数
-  // 因为它在遍历循环中被频繁调用，且通常只检查路径字符串
-  // 只有这个特定的智能排除逻辑需要文件系统访问
-  // 在大规模项目中，这可能成为性能瓶颈，但在当前架构下是可以接受的
-  const dirPath = path.dirname(filePath);
-  try {
-    const isToolDir = fs.existsSync(path.join(dirPath, 'project-stats.js'));
-    const isRootDir = path.resolve(dirPath) === path.resolve(config.rootDir);
+  // 智能排除：使用 config.toolRoot 精确判断
+  // 如果当前文件路径包含工具根目录，则排除
+  // 场景1: 工具放在项目子目录 (Project/tool) -> toolRoot = Project/tool
+  // 场景2: 工具放在外部 (Outside/tool) -> toolRoot = Outside/tool
+  if (config.toolRoot) {
+    // 将两个路径都标准化为绝对路径
+    const absFilePath = path.resolve(filePath);
+    const absToolRoot = path.resolve(config.toolRoot);
     
-    if (isToolDir && !isRootDir) {
-      return true;
+    // 如果文件路径以工具根目录开头，说明该文件在工具目录内
+    // 注意：要确保不是根目录本身（虽然一般不会扫描自己，但以防万一）
+    // 并且要确保是目录边界（避免类似 /path/tool-suffix 的误判）
+    if (absFilePath.startsWith(absToolRoot) && absFilePath !== absToolRoot) {
+      // 进一步确认是子目录关系
+      const relativeToTool = path.relative(absToolRoot, absFilePath);
+      if (!relativeToTool.startsWith('..') && !path.isAbsolute(relativeToTool)) {
+        return true;
+      }
     }
-  } catch (e) {
-    // 忽略文件系统错误
+  } else {
+    // 降级方案：如果未提供 toolRoot，使用旧的 heuristic 逻辑
+    const dirPath = path.dirname(filePath);
+    try {
+      const isToolDir = fs.existsSync(path.join(dirPath, 'project-stats.js'));
+      const isRootDir = path.resolve(dirPath) === path.resolve(config.rootDir);
+      
+      if (isToolDir && !isRootDir) {
+        return true;
+      }
+    } catch (e) {
+      // 忽略文件系统错误
+    }
   }
   
   // 检查 .gitignore 规则

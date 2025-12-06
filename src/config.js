@@ -79,12 +79,16 @@ const LANGUAGE_MAP = {
 /**
  * 创建配置对象
  * @param {string} targetDir - 目标目录
+ * @param {string} toolRoot - 工具所在的根目录（用于智能排除自身）
  * @returns {object} 配置对象
  */
-function createConfig(targetDir) {
+function createConfig(targetDir, toolRoot = null) {
   return {
     // 项目根目录
     rootDir: targetDir,
+    
+    // 工具根目录（用于排除）
+    toolRoot: toolRoot,
     
     // 需要统计的文件扩展名（50+ 种语言）
     extensions: {

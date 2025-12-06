@@ -1,16 +1,83 @@
 /**
- * 历史记录管理器 v1.1
+ * 历史记录管理器 v2.5
  * 负责统计数据的历史记录存储和对比分析
+ * v2.5 更新：代码重构，提取备份逻辑
  */
 
 const fs = require('fs');
 const path = require('path');
 
 class HistoryManager {
-  constructor(resultsDir, maxRecords = 100) {
+  /**
+   * @param {string} resultsDir - 结果根目录
+   * @param {string} projectName - 项目名称（可选）
+   * @param {number} maxRecords - 最大保留记录数
+   */
+  constructor(resultsDir, projectName = null, maxRecords = 100) {
     this.resultsDir = resultsDir;
-    this.historyFile = path.join(resultsDir, 'history.json');
+    this.projectName = projectName ? this._sanitizeFolderName(projectName) : null;
     this.maxRecords = maxRecords; // 最多保存的历史记录条数（可配置）
+    
+    // 如果指定了项目名，历史文件放在子目录中
+    if (this.projectName) {
+      const projectDir = path.join(resultsDir, this.projectName);
+      if (!fs.existsSync(projectDir)) {
+        fs.mkdirSync(projectDir, { recursive: true });
+      }
+      this.historyFile = path.join(projectDir, 'history.json');
+    } else {
+      // 兼容旧模式：如果不传项目名，使用根目录下的 history.json
+      this.historyFile = path.join(resultsDir, 'history.json');
+    }
+  }
+
+  /**
+   * 格式化文件夹名称
+   */
+  _sanitizeFolderName(name) {
+    return name.replace(/[\\/:*?"<>|]/g, '_');
+  }
+
+  /**
+   * 备份文件
+   * @param {string} sourcePath 
+   * @param {string} destPath 
+   * @returns {boolean} 是否成功
+   */
+  _createBackup(sourcePath, destPath) {
+    try {
+      if (fs.existsSync(sourcePath)) {
+        fs.copyFileSync(sourcePath, destPath);
+        return true;
+      }
+    } catch (error) {
+      console.warn('⚠️  备份失败:', error.message);
+    }
+    return false;
+  }
+
+  /**
+   * 从备份恢复
+   * @param {string} backupPath 
+   * @param {string} destPath 
+   * @returns {object|null} 恢复的数据
+   */
+  _restoreFromBackup(backupPath, destPath) {
+    if (fs.existsSync(backupPath)) {
+      try {
+        console.log('🔄 尝试从备份恢复...');
+        fs.copyFileSync(backupPath, destPath);
+        const data = fs.readFileSync(destPath, 'utf8');
+        const parsed = JSON.parse(data);
+        if (parsed.records && Array.isArray(parsed.records)) {
+          console.log('✅ 成功从备份恢复');
+          return parsed;
+        }
+      } catch (error) {
+        console.error('❌ 恢复失败:', error.message);
+      }
+    }
+    return null;
   }
 
   /**
@@ -20,7 +87,7 @@ class HistoryManager {
     if (!fs.existsSync(this.historyFile)) {
       const initialData = {
         version: '1.0',
-        project: path.basename(process.cwd()),
+        project: this.projectName || path.basename(process.cwd()),
         created: new Date().toISOString(),
         records: []
       };
@@ -48,22 +115,9 @@ class HistoryManager {
     } catch (error) {
       console.warn('⚠️  加载历史记录失败:', error.message);
       
-      // 尝试从备份恢复
       const backupFile = this.historyFile + '.backup';
-      if (fs.existsSync(backupFile)) {
-        try {
-          console.log('🔄 尝试从备份恢复历史记录...');
-          const backupData = fs.readFileSync(backupFile, 'utf8');
-          const parsed = JSON.parse(backupData);
-          
-          if (parsed.records && Array.isArray(parsed.records)) {
-            console.log('✅ 成功从备份恢复历史记录');
-            return parsed;
-          }
-        } catch (backupError) {
-          console.error('❌ 备份文件也已损坏:', backupError.message);
-        }
-      }
+      const restored = this._restoreFromBackup(backupFile, this.historyFile);
+      if (restored) return restored;
       
       // 返回空历史结构以保证程序继续运行
       return { version: '1.1', records: [] };
@@ -78,15 +132,8 @@ class HistoryManager {
       this.initHistory();
       const history = this.loadHistory();
       
-      // 保存前先创建备份（如果历史文件存在）
-      if (fs.existsSync(this.historyFile)) {
-        try {
-          fs.copyFileSync(this.historyFile, this.historyFile + '.backup');
-        } catch (backupError) {
-          console.warn('⚠️  创建备份失败:', backupError.message);
-          // 继续执行，不因备份失败而中断
-        }
-      }
+      // 创建备份
+      this._createBackup(this.historyFile, this.historyFile + '.backup');
       
       const record = {
         id: Date.now().toString(),
@@ -129,20 +176,9 @@ class HistoryManager {
       try {
         fs.writeFileSync(this.historyFile, JSON.stringify(history, null, 2), 'utf8');
       } catch (writeError) {
-        // 如果写入失败，尝试恢复备份
         console.error('❌ 写入历史记录失败:', writeError.message);
-        
-        const backupFile = this.historyFile + '.backup';
-        if (fs.existsSync(backupFile)) {
-          try {
-            console.log('🔄 恢复备份文件...');
-            fs.copyFileSync(backupFile, this.historyFile);
-            console.log('✅ 已恢复备份');
-          } catch (restoreError) {
-            console.error('❌ 恢复备份失败:', restoreError.message);
-          }
-        }
-        
+        // 尝试恢复
+        this._restoreFromBackup(this.historyFile + '.backup', this.historyFile);
         throw writeError;
       }
       
