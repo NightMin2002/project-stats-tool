@@ -1,6 +1,5 @@
 @echo off
-chcp 65001 >nul
-REM Manual update check script
+REM 手动检查更新脚本
 cd /d "%~dp0"
-node src\update-checker.js
+node src/update-checker.js
 pause
