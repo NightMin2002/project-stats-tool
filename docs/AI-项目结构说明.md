@@ -9,7 +9,7 @@
 ```
 project-stats-tool/
 ├── src/                          # 源代码目录
-│   ├── project-stats.js          # 🎯 主入口（异步执行流程）
+│   ├── project-stats.js          # 🎯 主入口（交互式选择/参数解析）
 │   ├── config.js                 # ⚙️ 配置管理（177行）
 │   ├── history-manager.js        # 📊 历史记录管理器（含自动备份/恢复）
 │   ├── view-history.js           # 📈 历史查看CLI工具
@@ -56,28 +56,28 @@ project-stats-tool/
 │   ├── ProjectB/                 # 项目B的统计结果
 │   └── ...
 │
-├── 统计项目.bat                  # Windows启动脚本（支持拖拽）
+├── 统计项目.bat                  # Windows启动脚本（交互式/拖拽）
 ├── 查看历史.bat                  # 历史查看脚本
+├── package.json                  # 项目元数据 (CommonJS)
 ├── README.md                     # 用户文档
 └── LICENSE                       # MIT许可证
 ```
 
 ---
 
-## 🎯 模块职责 (v2.12.0 + V3 UI)
+## 🎯 模块职责 (v3.1.0)
 
 ### 入口层
 
 #### [`project-stats.js`](../src/project-stats.js:1) - 主入口
-**职责**: 
-- 协调所有模块的执行流程（异步）
-- 控制台输出
-- 历史记录管理
-- 报告生成和保存（`await saveAllReports`）
+**职责 (v3.1.0)**: 
+- **交互式选择**: 自动发现同级项目并提供选择菜单（`selectProject`）。
+- **参数解析**: 统一处理命令行参数、拖拽路径和交互选择。
+- **流程协调**: 调度扫描、分析、生成、保存等全流程。
 
 **核心流程**:
 ```
-初始化配置 → 异步扫描项目 → 计算统计 → 历史管理(含备份) → 生成报告 → 并行保存输出 → 控制台输出
+解析参数(或交互选择) → 初始化配置 → 异步扫描项目 → 计算统计 → 历史管理 → 生成报告 → 并行保存 → 控制台输出
 ```
 
 ---
@@ -158,23 +158,28 @@ project-stats-tool/
 
 #### [`utils/file-utils.js`](../src/utils/file-utils.js:1) - 文件工具
 **职责**:
-- **v2.12 新增**: `shouldExclude` 增加对工具自身路径的智能检测
-- 二进制文件检测 (`isBinaryFile`，读取文件头判断)
+- **v3.1.0 升级**: `shouldExclude` 逻辑重构，支持精确路径片段匹配，修复 `build` 等关键词误伤问题。
+- **智能自我排除**: 仅在非目标扫描（即扫描父级）时排除工具自身。
+- **二进制检测**: 优化 UTF-16 识别逻辑。
 
 ---
 
-## 🔄 执行流程 (v2.12.0)
+## 🔄 执行流程 (v3.1.0)
 
 ```
-用户拖拽/点击 → 统计项目.bat (修正CWD) → update-checker.js
+用户双击/拖拽 → 统计项目.bat (修正CWD)
     ↓
 project-stats.js (Main)
+    ↓
+[0] 参数解析 / 交互式选择 (selectProject)
+    - 自动发现同级目录
+    - 用户输入选择
     ↓
 [1] 配置初始化 (含 toolRoot 识别)
     ↓
 [2] 极速扫描 (project-scanner.js)
     - readdir withFileTypes
-    - 并行处理 & 智能排除
+    - 并行处理 & 智能排除 (file-utils.js)
     ↓
 [3] 统计计算 (stats-calculator.js)
     ↓
@@ -199,6 +204,6 @@ project-stats.js (Main)
 
 ---
 
-**最后更新**: 2025-12-06  
-**版本**: v3.0.0 (UI) / v2.12.1 (Core)  
+**最后更新**: 2025-12-07  
+**版本**: v3.1.0 (Core & UI)  
 **维护**: Ω Code Agent

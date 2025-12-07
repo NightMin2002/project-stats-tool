@@ -125,7 +125,7 @@ function createConfig(targetDir, toolRoot = null) {
       'vendor', 'venv', '__pycache__',
       '.idea', '.vscode', '.DS_Store',
       'coverage', '.nyc_output',
-      '统计工具', 'stats-tool', 'project-stats-tool', 'results'
+      'results'
     ],
     
     // 第三方库目录（智能识别）
@@ -133,22 +133,28 @@ function createConfig(targetDir, toolRoot = null) {
       'lib', 'libs', 'library', 'libraries',
       'vendor', 'vendors', 'third-party', 'third_party',
       'external', 'dependencies', 'plugins',
-      'bower_components', 'jspm_packages', 'packages'
+      'bower_components', 'jspm_packages'
+      // 移除 'packages'，因为它在 Monorepo 中通常是源码目录
     ],
     
     // 第三方库文件特征
+    // 移除过于宽泛的匹配，如 'react.'，这会导致普通业务文件如 'react-component.tsx' 被误判
     libraryFilePatterns: [
       '.min.js', '.min.css',
       '-min.js', '-min.css',
       '.bundle.js', '.bundle.css',
       '.vendor.js', '.vendor.css',
-      'jquery', 'bootstrap', 'lodash', 'underscore',
-      'react.', 'vue.', 'angular.',
-      'moment.', 'axios.', 'd3.',
-      'chart.', 'echarts.', 'three.',
-      'katex', 'markdown-it', 'markdown-it-',
-      'highlight', 'prism', 'codemirror', 'ace-',
-      'dompurify', 'texmath', 'mathjax'
+      'jquery.js', 'jquery.min.js',
+      'bootstrap.js', 'bootstrap.min.js',
+      'lodash.js', 'underscore.js',
+      'moment.js', 'axios.js', 'd3.js',
+      'chart.js', 'echarts.js', 'three.js',
+      'katex.js', 'markdown-it.js',
+      'highlight.js', 'prism.js', 'codemirror.js',
+      'dompurify.js', 'texmath.js', 'mathjax.js',
+      // 特定框架构建产物特征
+      '.chunk.js', '.chunk.css',
+      'runtime.', 'polyfills.'
     ],
     
     // tokens 估算规则

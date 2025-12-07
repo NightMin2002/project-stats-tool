@@ -8,7 +8,7 @@ const path = require('path');
 const { LANGUAGE_MAP } = require('../config');
 const { countChineseChars, countEnglishWords } = require('./text-analyzer');
 const { analyzeCodeLine } = require('./code-analyzer');
-const { isCodeFile, isBinaryFile } = require('../utils/file-utils');
+const { isCodeFile, isBinaryFile, isDocFile } = require('../utils/file-utils');
 const { formatSize } = require('../utils/formatters');
 
 // 最大文件大小限制（50MB）
@@ -30,9 +30,16 @@ async function analyzeFile(filePath, stats, config) {
       return;
     }
 
+    // 优化：如果是已知的代码或文档文件，跳过二进制检查，强制尝试按文本读取
+    // 这解决了某些 UTF-16 或包含特殊字符的源代码文件被误判为二进制的问题
+    let shouldCheckBinary = true;
+    if (isCodeFile(filePath, config) || isDocFile(filePath, config)) {
+      shouldCheckBinary = false;
+    }
+
     // 检查是否为二进制文件
-    if (await isBinaryFile(filePath)) {
-      // console.warn(`⚠️  二进制文件，跳过: ${path.relative(config.rootDir, filePath)}`);
+    if (shouldCheckBinary && await isBinaryFile(filePath)) {
+      console.warn(`⚠️  检测到二进制文件，跳过: ${path.relative(config.rootDir, filePath)}`);
       // 可以在这里决定是否统计为"排除的文件"或者只是不进行文本分析
       // 目前保持与旧版本一致的行为：跳过
       return;

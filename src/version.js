@@ -3,9 +3,9 @@
  * 统一管理项目版本号
  */
 
-const VERSION = '3.0.0';
-const VERSION_NAME = '视觉革命版';
-const RELEASE_DATE = '2025-12-06';
+const VERSION = '3.1.0';
+const VERSION_NAME = '交互进化版';
+const RELEASE_DATE = '2025-12-07';
 
 /**
  * 获取完整版本信息

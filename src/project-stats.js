@@ -10,7 +10,7 @@
  *   -v, --version    显示版本信息
  *
  * 示例:
- *   node project-stats.js              # 统计当前目录
+ *   node project-stats.js              # 交互式选择项目（推荐）
  *   node project-stats.js ../my-app    # 统计指定项目
  *   node project-stats.js --help       # 显示帮助
  *
@@ -19,6 +19,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 
 // 导入版本管理
 const { getVersion, getVersionInfo } = require('./version');
@@ -60,11 +61,11 @@ function printHelp() {
   -v, --version    显示版本信息
 
 参数:
-  [项目路径]       要统计的项目目录（默认：当前目录的父目录）
+  [项目路径]       要统计的项目目录
 
 示例:
   node project-stats.js
-      统计当前目录的父目录
+      启动交互式选择模式（列出同一级的所有项目文件夹）
 
   node project-stats.js ../my-project
       统计指定项目
@@ -73,6 +74,7 @@ function printHelp() {
       显示帮助信息
 
 功能特性:
+  ✅ 交互式项目选择 (v3.1)
   ✅ 智能统计文字、代码、Token
   ✅ 支持 50+ 种编程语言
   ✅ 自动排除第三方库文件
@@ -103,9 +105,85 @@ function printVersion() {
 }
 
 /**
+ * 获取父目录下的所有文件夹（候选项目）
+ */
+async function getSiblingProjects(toolRoot) {
+  const parentDir = path.dirname(toolRoot);
+  try {
+    const items = await fs.promises.readdir(parentDir, { withFileTypes: true });
+    return items
+      .filter(item => item.isDirectory())
+      .map(item => ({
+        name: item.name,
+        path: path.join(parentDir, item.name)
+      }))
+      // 排除隐藏文件夹
+      .filter(project => !project.name.startsWith('.'));
+  } catch (error) {
+    console.error('无法读取父目录:', error.message);
+    return [];
+  }
+}
+
+/**
+ * 交互式选择项目
+ */
+async function selectProject(projects, parentDir) {
+  if (projects.length === 0) {
+    console.log('⚠️  未在父目录中发现任何项目文件夹。');
+    return null;
+  }
+
+  console.log('\n📋 发现以下项目:\n');
+  
+  // 选项 1：统计所有（父目录）
+  console.log(`  [1] 📂 统计所有项目 (父目录: ${path.basename(parentDir)})`);
+  
+  // 选项 2+: 各个子项目
+  projects.forEach((proj, index) => {
+    // 标记当前工具所在的文件夹
+    const isCurrent = proj.path === process.cwd();
+    const mark = isCurrent ? ' (当前工具)' : '';
+    console.log(`  [${index + 2}] ${proj.name}${mark}`);
+  });
+  console.log(`  [0] 退出`);
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    rl.question('\n👉 请输入编号选择要统计的项目: ', (answer) => {
+      rl.close();
+      const choice = parseInt(answer.trim());
+      
+      if (isNaN(choice) || choice < 0 || choice > projects.length + 1) {
+        console.log('❌ 无效的选择');
+        resolve(null);
+        return;
+      }
+
+      if (choice === 0) {
+        process.exit(0);
+      }
+      
+      // 选择 1 是父目录
+      if (choice === 1) {
+          resolve(parentDir);
+          return;
+      }
+
+      // 其他选择对应数组下标（注意 offset）
+      resolve(projects[choice - 2].path);
+    });
+  });
+}
+
+/**
  * 解析命令行参数
  */
-function parseArguments() {
+async function parseArguments() {
   const args = process.argv.slice(2);
   
   // 检查帮助参数
@@ -120,19 +198,25 @@ function parseArguments() {
     process.exit(0);
   }
   
-  // 获取目标目录
-  // 支持引号包围的路径（通常命令行会自动处理，但为了稳健性）
+  // 情况 1: 用户提供了路径参数 (拖拽或命令行)
   let targetPathRaw = args[0];
   if (targetPathRaw) {
-      // 移除可能存在的首尾引号（如果 shell 没有自动移除）
       targetPathRaw = targetPathRaw.replace(/^"|"$/g, '');
+      return { targetDir: path.resolve(targetPathRaw) };
   }
 
-  const targetDir = targetPathRaw
-    ? path.resolve(targetPathRaw)
-    : path.resolve(process.cwd(), '..');
+  // 情况 2: 未提供参数 -> 启动交互式选择
+  // 获取工具根目录（向上两级：src/ -> project-stats-tool/）
+  const toolRoot = path.resolve(__dirname, '..');
+  const projects = await getSiblingProjects(toolRoot);
+  const parentDir = path.dirname(toolRoot);
   
-  return { targetDir };
+  const selectedPath = await selectProject(projects, parentDir);
+  if (!selectedPath) {
+    process.exit(0);
+  }
+
+  return { targetDir: selectedPath };
 }
 
 /**
@@ -259,8 +343,8 @@ function printChangeItem(label, change) {
  */
 async function main() {
   try {
-    // 解析命令行参数
-    const { targetDir } = parseArguments();
+    // 解析命令行参数（改为异步，支持交互式选择）
+    const { targetDir } = await parseArguments();
     
     // 检查目录是否存在
     if (!fs.existsSync(targetDir)) {

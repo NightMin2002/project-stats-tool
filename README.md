@@ -1,32 +1,33 @@
 # 🌙 项目统计工具 (Project Stats Tool)
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com)
 [![Node](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具
 > 📈 支持历史对比分析、趋势可视化、50+ 种编程语言
 > 🌙 **Night Theme V3**: 动态月亮动画 + 玻璃拟态 UI + 全 SVG 图标系统
-> ✨ **v3.0.0 全新发布**：视觉与交互的全面进化
+> ✨ **v3.1.0 全新发布**：交互式选择与核心扫描引擎升级
 
 ---
 
-## 🔄 最新增强（v3.0.0）
-- **🎨 视觉革命**：全面引入 Glassmorphism（玻璃拟态）设计风格，配合精美的动态月亮动画，打造沉浸式夜间模式体验。
-- **💎 SVG 图标**：内置定制化 SVG 图标库，彻底取代 Emoji，在任何分辨率下都清晰锐利，风格更加统一专业。
-- **📱 响应式布局**：基于 CSS Grid 重构页面结构，完美适配从超宽屏到移动端的各种设备。
-- **✨ 交互升级**：文件树支持箭头动画，图表增加防裁剪保护，悬停效果更加细腻流畅。
+## 🔄 最新增强（v3.1.0）
+- **🚀 交互式选择**：告别繁琐的命令行和拖拽！直接运行脚本，通过数字键快速选择要统计的项目。
+- **📂 全栈统计模式**：支持一键统计父目录下的所有子项目（如 Monorepo），生成全栈总报告。
+- **🎯 核心引擎升级**：重构路径排除逻辑，彻底解决 `build` 等关键词误伤问题；智能识别工具运行环境，完美兼容项目内运行。
+- **🐛 深度兼容**：修复 ESM/CommonJS 兼容性，增强对 `.ts`/`.tsx` 源码的识别能力。
 
 ---
 
 ## 🚀 快速开始
 
-### 方法 1：双击运行（推荐）
+### 方法 1：交互式选择（🔥 强力推荐）
 ```
-双击 统计项目.bat → 自动统计当前目录
+双击 统计项目.bat → 在列表中输入数字选择要统计的项目
 ```
+*提示：输入 `1` 可统计当前所有子项目（父目录模式）*
 
-### 方法 2：拖放操作（推荐）
+### 方法 2：拖放操作
 ```
 拖动项目文件夹到 统计项目.bat → 统计该项目
 ```
@@ -38,10 +39,9 @@
 
 ### 方法 4：命令行
 ```bash
-node src/project-stats.js              # 统计当前目录
+node src/project-stats.js              # 启动交互式选择
 node src/project-stats.js ../my-app    # 统计指定项目
 node src/project-stats.js --help       # 显示帮助信息
-node src/project-stats.js --version    # 显示版本信息
 ```
 
 ---
@@ -67,7 +67,7 @@ node src/project-stats.js --version    # 显示版本信息
 - ✅ 自动识别并排除第三方库（lib、vendor、.min.js 等）
 - ✅ 自动读取 `.gitignore` 规则
 - ✅ 智能排除 `node_modules`、`.git`、`dist` 等
-- ✅ **智能自身排除**：工具会自动识别自己的代码，防止自我统计
+- ✅ **智能自身排除**：自动防止将工具自身的代码计入统计结果（仅在统计父目录时生效）
 
 ### 🌙 可视化报告 (V3.0.0)
 - **Night Theme V3** - 玻璃拟态风格 + 动态月亮动画
@@ -171,17 +171,17 @@ node src/view-history.js compare 1 5    # 对比第1和第5条
 
 ### 独立性保证
 
-- ✅ **零外部依赖** - 仅使用 Node.js 内置模块（`fs`, `path`）
+- ✅ **零外部依赖** - 仅使用 Node.js 内置模块（`fs`, `path`, `readline`）
 - ✅ **本地化库文件** - Chart.js 和 Particles.js 已内置
 - ✅ **开箱即用** - 无需 `npm install`
 
 ---
 
 ## 🧪 推荐工作流
-1. 将工具文件夹放在任意位置（如桌面）。
-2. 将需要统计的项目文件夹**拖拽**到 `统计项目.bat` 上。
-3. 等待几秒，打开生成的 HTML 报告查看详情。
-4. 下次代码更新后，再次拖拽同一项目，即可自动生成趋势图和对比分析。
+1. 将工具文件夹放在任意位置（如桌面或项目根目录）。
+2. 双击 `统计项目.bat`。
+3. 输入数字选择要统计的项目（或输入 `1` 统计所有）。
+4. 几秒后，打开生成的 HTML 报告查看详情。
 
 ---
 
@@ -234,6 +234,6 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 **Made with ❤️ and 🌙 by Ω Code Agent**
 
-⭐ **[立即体验 v3.0.0 视觉革命版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
+⭐ **[立即体验 v3.1.0 交互进化版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
 
 </div>

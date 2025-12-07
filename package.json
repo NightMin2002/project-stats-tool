@@ -1,0 +1,20 @@
+{
+  "name": "project-stats-tool",
+  "version": "3.0.0",
+  "description": "本地项目代码统计工具",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/project-stats.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "stats",
+    "sloc",
+    "code-analysis"
+  ],
+  "author": "Omega Code Agent",
+  "license": "MIT",
+  "dependencies": {
+    "chart.js": "^3.9.1"
+  }
+}
