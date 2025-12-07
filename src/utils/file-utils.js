@@ -138,6 +138,7 @@ function isDocFile(filePath, config) {
 /**
  * 检测文件是否为二进制文件
  * 通过读取文件前 4KB 内容并检查空字节来判断
+ * 优化：支持 UTF-16 LE/BE BOM 避免误判
  * @param {string} filePath - 文件路径
  * @returns {Promise<boolean>}
  */
@@ -148,11 +149,38 @@ async function isBinaryFile(filePath) {
     const buffer = Buffer.alloc(4096);
     const { bytesRead } = await handle.read(buffer, 0, 4096, 0);
     
+    if (bytesRead === 0) return false; // 空文件视为非二进制
+
+    let startCheckOffset = 0;
+
+    // 检查 UTF-16 BOM
+    if (bytesRead >= 2) {
+      if (buffer[0] === 0xFF && buffer[1] === 0xFE) {
+        // UTF-16 LE BOM detected
+        return false; 
+      }
+      if (buffer[0] === 0xFE && buffer[1] === 0xFF) {
+        // UTF-16 BE BOM detected
+        return false;
+      }
+    }
+    
+    // 检查 UTF-8 BOM
+    if (bytesRead >= 3 && buffer[0] === 0xEF && buffer[1] === 0xBB && buffer[2] === 0xBF) {
+        startCheckOffset = 3;
+    }
+
     // 检查空字节 (Null Byte)
     // 文本文件通常不包含空字节，而二进制文件通常包含
-    for (let i = 0; i < bytesRead; i++) {
+    // 注意：UTF-16 编码的文件会包含大量 0x00，但如果有 BOM 已经在前面处理了
+    // 如果没有 BOM 但内容看起来像 UTF-16（每隔一个字节是 0），这很难准确判断，
+    // 但大多数现代编辑器保存 UTF-16 都会带 BOM。
+    // 这里我们主要防止 UTF-8 或 ANSI 编码文本被误判。
+    for (let i = startCheckOffset; i < bytesRead; i++) {
       if (buffer[i] === 0) {
-        return true;
+        // 如果发现 0x00，再次确认周围上下文，避免极少数特殊字符误判
+        // 但对于简单判断，0x00 是最强的二进制特征
+        return true; 
       }
     }
     return false;

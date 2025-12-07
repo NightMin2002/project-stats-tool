@@ -9,6 +9,25 @@ const { shouldExclude, isCodeFile, isDocFile, isLibraryFile } = require('../util
 const { analyzeFile } = require('../analyzers/file-analyzer');
 
 /**
+ * 处理单个文件
+ * @param {string} fullPath - 文件完整路径
+ * @param {object} stats - 统计数据对象
+ * @param {object} config - 配置对象
+ */
+async function processFile(fullPath, stats, config) {
+  if (isCodeFile(fullPath, config) || isDocFile(fullPath, config)) {
+    // 检查是否为第三方库文件（用于文字提取和代码统计）
+    if (isLibraryFile(fullPath, config, false)) {
+      stats.files.excluded.libraries++;
+      stats.files.excluded.total++;
+    } else {
+      // 分析文件 (analyzeFile 内部处理了二进制检测和读取)
+      await analyzeFile(fullPath, stats, config);
+    }
+  }
+}
+
+/**
  * 递归遍历目录并分析文件
  * 优化: 使用 withFileTypes: true 减少 fs.stat 调用
  * 优化: 限制并发数以避免 EMFILE 错误 (简单实现)
@@ -34,18 +53,7 @@ async function walkDirectory(dir, stats, config, gitignorePatterns) {
         if (item.isDirectory()) {
           await walkDirectory(fullPath, stats, config, gitignorePatterns);
         } else if (item.isFile()) {
-          const ext = path.extname(fullPath).toLowerCase();
-          
-          if (isCodeFile(fullPath, config) || isDocFile(fullPath, config)) {
-            // 检查是否为第三方库文件（用于文字提取和代码统计）
-            if (isLibraryFile(fullPath, config, false)) {
-              stats.files.excluded.libraries++;
-              stats.files.excluded.total++;
-            } else {
-              // 分析文件 (analyzeFile 内部处理了二进制检测和读取)
-              await analyzeFile(fullPath, stats, config);
-            }
-          }
+          await processFile(fullPath, stats, config);
         }
       } catch (itemError) {
         // 处理单个文件/目录的错误，不影响整体扫描
@@ -86,7 +94,21 @@ async function scanProject(stats, config, gitignorePatterns) {
   console.log('🚀 开始高速扫描...');
   const startTime = Date.now();
   
-  await walkDirectory(config.rootDir, stats, config, gitignorePatterns);
+  // 检查根路径是文件还是目录
+  try {
+    const rootStat = await fs.promises.stat(config.rootDir);
+    if (rootStat.isFile()) {
+      // 如果是文件，直接分析
+      if (!shouldExclude(config.rootDir, config, gitignorePatterns)) {
+        await processFile(config.rootDir, stats, config);
+      }
+    } else if (rootStat.isDirectory()) {
+      // 如果是目录，开始遍历
+      await walkDirectory(config.rootDir, stats, config, gitignorePatterns);
+    }
+  } catch (error) {
+    console.error(`❌ 无法访问项目路径: ${config.rootDir} (${error.message})`);
+  }
   
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
   console.log(`✅ 扫描完成，耗时 ${duration} 秒`);
