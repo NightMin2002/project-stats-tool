@@ -1,6 +1,7 @@
 /**
- * Night Theme JavaScript 逻辑模块 v3.0.0
- * 全面升级：SVG 图标支持、Chart.js 适配新 UI、现代化交互
+ * Night Theme JavaScript 逻辑模块 v3.3.0
+ * 全面升级：SVG 图标支持、增强文件树、搜索过滤、热力图着色、复制路径
+ * Ω Code Agent - UI Perfectionist Edition
  */
 
 module.exports = function generateScripts(stats, fileTreeData, trendData) {
@@ -343,20 +344,154 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
     });
     ` : ''}
 
-    // ========== 文件树逻辑 (SVG版 - 优化版) ==========
+    // ========== 文件树逻辑 (V3.3 增强版) ==========
     
-    // SVG Icons Definition
+    // SVG Icons Definition - 按文件类型着色
     const TREE_ICONS = {
       folder: \`<svg class="tree-icon" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="currentColor"/></svg>\`,
+      folderOpen: \`<svg class="tree-icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z" fill="currentColor"/></svg>\`,
       file: \`<svg class="tree-icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/></svg>\`,
       arrowRight: \`<svg class="icon icon-sm tree-arrow" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" fill="currentColor"/></svg>\`,
       arrowDown: \`<svg class="icon icon-sm tree-arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17 16.59 8.59 18 10l-6 6-6-6 1.41-1.41z" fill="currentColor"/></svg>\`,
-      dot: \`<svg class="icon icon-sm" viewBox="0 0 24 24" style="opacity: 0.3;"><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>\`
+      dot: \`<svg class="icon icon-sm" viewBox="0 0 24 24" style="opacity: 0.3;"><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>\`,
+      copy: \`<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" fill="currentColor"/></svg>\`,
+      search: \`<svg class="icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/></svg>\`,
+      clear: \`<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>\`
     };
+
+    // 文件类型颜色映射 - 按语言/类型着色
+    const FILE_COLORS = {
+      // JavaScript 生态
+      '.js': '#f7df1e',
+      '.mjs': '#f7df1e',
+      '.cjs': '#f7df1e',
+      '.jsx': '#61dafb',
+      '.ts': '#3178c6',
+      '.tsx': '#3178c6',
+      
+      // Web 前端
+      '.html': '#e34c26',
+      '.htm': '#e34c26',
+      '.css': '#264de4',
+      '.scss': '#cc6699',
+      '.sass': '#cc6699',
+      '.less': '#1d365d',
+      '.vue': '#42b883',
+      '.svelte': '#ff3e00',
+      
+      // 后端 / 系统
+      '.py': '#3776ab',
+      '.rb': '#cc342d',
+      '.php': '#777bb4',
+      '.java': '#b07219',
+      '.go': '#00add8',
+      '.rs': '#dea584',
+      '.c': '#555555',
+      '.cpp': '#f34b7d',
+      '.h': '#555555',
+      '.cs': '#178600',
+      
+      // 数据 / 配置
+      '.json': '#cbcb41',
+      '.yaml': '#cb171e',
+      '.yml': '#cb171e',
+      '.xml': '#0060ac',
+      '.toml': '#9c4121',
+      '.ini': '#d1dbe0',
+      '.env': '#ecd53f',
+      
+      // 文档
+      '.md': '#083fa1',
+      '.mdx': '#fcb32c',
+      '.txt': '#89e051',
+      '.rst': '#141414',
+      
+      // Shell / 脚本
+      '.sh': '#89e051',
+      '.bash': '#89e051',
+      '.zsh': '#89e051',
+      '.bat': '#c1f12e',
+      '.ps1': '#012456',
+      
+      // 图片 / 资源
+      '.svg': '#ffb13b',
+      '.png': '#a074c4',
+      '.jpg': '#a074c4',
+      '.jpeg': '#a074c4',
+      '.gif': '#a074c4',
+      '.ico': '#a074c4',
+      '.webp': '#a074c4',
+      
+      // 其他
+      '.sql': '#e38c00',
+      '.graphql': '#e10098',
+      '.dockerfile': '#384d54',
+      '.lock': '#89e051',
+      
+      // 默认
+      'default': '#94a3b8'
+    };
+    
+    // 获取文件颜色
+    function getFileColor(ext) {
+      return FILE_COLORS[ext.toLowerCase()] || FILE_COLORS['default'];
+    }
+    
+    // 获取文件大小热力图颜色
+    function getSizeHeatColor(size, maxSize) {
+      if (!maxSize || maxSize === 0) return '';
+      const ratio = size / maxSize;
+      if (ratio > 0.8) return 'size-huge';
+      if (ratio > 0.6) return 'size-large';
+      if (ratio > 0.4) return 'size-medium';
+      if (ratio > 0.2) return 'size-small';
+      return 'size-tiny';
+    }
 
     let expandedFolders = new Set();
     let fileCount = 0;
     let folderCount = 0;
+    let searchQuery = '';
+    let maxFileSize = 0;
+    let allFilePaths = []; // 用于搜索
+    
+    // 计算最大文件大小（用于热力图）
+    function calculateMaxFileSize(node) {
+      if (!node) return 0;
+      if (node.type === 'file') return node.size || 0;
+      if (node.children) {
+        return Math.max(...node.children.map(calculateMaxFileSize), 0);
+      }
+      return 0;
+    }
+    
+    // 收集所有文件路径（用于搜索）
+    function collectAllPaths(node, parentPath = '') {
+      if (!node) return;
+      const currentPath = parentPath ? \`\${parentPath}/\${node.name}\` : node.name;
+      allFilePaths.push({ path: currentPath, type: node.type, name: node.name });
+      if (node.children) {
+        node.children.forEach(child => collectAllPaths(child, currentPath));
+      }
+    }
+    
+    // 检查节点是否匹配搜索
+    function matchesSearch(name, path) {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return name.toLowerCase().includes(query) || path.toLowerCase().includes(query);
+    }
+    
+    // 检查节点或其子节点是否匹配搜索
+    function nodeOrChildrenMatch(node, parentPath = '') {
+      if (!searchQuery) return true;
+      const currentPath = parentPath ? \`\${parentPath}/\${node.name}\` : node.name;
+      if (matchesSearch(node.name, currentPath)) return true;
+      if (node.children) {
+        return node.children.some(child => nodeOrChildrenMatch(child, currentPath));
+      }
+      return false;
+    }
     
     function renderTree(node, level = 0, parentPath = '') {
       if (!node) return '';
@@ -366,24 +501,47 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
       const indent = \`<span style="display:inline-block; width:\${level * 1.5}rem"></span>\`;
       let html = '';
       
+      // 搜索过滤
+      if (searchQuery && !nodeOrChildrenMatch(node, parentPath.replace(node.name, '').replace(/\\/$/, ''))) {
+        return '';
+      }
+      
       if (node.type === 'directory') {
         folderCount++;
         const hasChildren = node.children && node.children.length > 0;
-        const isExpanded = expandedFolders.has(currentPath);
+        const isExpanded = expandedFolders.has(currentPath) || (searchQuery && hasChildren);
         
-        // Icon selection - 使用 data-expanded 属性便于后续切换
+        // 计算目录统计
+        let totalFiles = 0;
+        let totalSize = 0;
+        function countChildren(n) {
+          if (n.type === 'file') {
+            totalFiles++;
+            totalSize += n.size || 0;
+          }
+          if (n.children) n.children.forEach(countChildren);
+        }
+        if (node.children) node.children.forEach(countChildren);
+        
+        // Icon selection - 展开时使用打开的文件夹图标
         const expandIcon = hasChildren
           ? (isExpanded ? TREE_ICONS.arrowDown : TREE_ICONS.arrowRight)
           : TREE_ICONS.dot;
+        const folderIcon = isExpanded ? TREE_ICONS.folderOpen : TREE_ICONS.folder;
           
         const itemClass = hasChildren ? 'tree-folder tree-item' : 'tree-folder tree-item disabled';
         const clickAttr = hasChildren ? \`onclick="toggleFolder(event, '\${escapedPath}')"\` : '';
         const dataAttr = hasChildren ? \`data-path="\${escapedPath}" data-expanded="\${isExpanded}"\` : '';
         
+        // 高亮匹配的搜索词
+        const displayName = searchQuery
+          ? highlightMatch(node.name, searchQuery)
+          : node.name;
+        
         html += \`<div class="\${itemClass}" \${clickAttr} \${dataAttr}>\`;
-        html += \`\${indent}<span class="tree-expand-icon">\${expandIcon}</span> \${TREE_ICONS.folder} <span class="tree-name">\${node.name}</span>\`;
+        html += \`\${indent}<span class="tree-expand-icon">\${expandIcon}</span> \${folderIcon} <span class="tree-name">\${displayName}</span>\`;
         if (hasChildren) {
-          html += \` <span class="tree-meta">\${node.children.length} items</span>\`;
+          html += \` <span class="tree-meta">\${node.children.length} 项 · \${formatBytes(totalSize)}</span>\`;
         }
         html += \`</div>\`;
         
@@ -391,6 +549,7 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
           const childrenClass = isExpanded ? 'tree-children open' : 'tree-children';
           html += \`<div class="\${childrenClass}" data-parent="\${escapedPath}">\`;
           node.children
+            .filter(child => !searchQuery || nodeOrChildrenMatch(child, currentPath))
             .sort((a, b) => {
               if (a.type === b.type) return a.name.localeCompare(b.name);
               return a.type === 'directory' ? -1 : 1;
@@ -402,11 +561,22 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
         }
       } else {
         fileCount++;
+        const ext = node.ext || '';
+        const fileColor = getFileColor(ext);
         const sizeLabel = node.size ? formatBytes(node.size) : '';
-        html += \`<div class="tree-item tree-file" data-tooltip="\${currentPath}">\`;
-        html += \`\${indent}<span style="width:1rem;display:inline-block"></span>\${TREE_ICONS.file} <span class="tree-name">\${node.name}</span>\`;
+        const sizeClass = getSizeHeatColor(node.size || 0, maxFileSize);
+        
+        // 高亮匹配的搜索词
+        const displayName = searchQuery
+          ? highlightMatch(node.name, searchQuery)
+          : node.name;
+        
+        html += \`<div class="tree-item tree-file" data-path="\${escapedPath}" data-tooltip="\${currentPath}" ondblclick="copyPath(event, '\${escapedPath}')">\`;
+        html += \`\${indent}<span style="width:1rem;display:inline-block"></span>\`;
+        html += \`<span style="color: \${fileColor}">\${TREE_ICONS.file}</span>\`;
+        html += \` <span class="tree-name">\${displayName}</span>\`;
         if (sizeLabel) {
-          html += \` <span class="tree-meta">\${sizeLabel}</span>\`;
+          html += \` <span class="tree-meta \${sizeClass}">\${sizeLabel}</span>\`;
         }
         html += \`</div>\`;
       }
@@ -447,11 +617,90 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
       return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
     }
     
+    // 高亮搜索匹配
+    function highlightMatch(text, query) {
+      if (!query) return text;
+      const regex = new RegExp(\`(\${query.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&')})\`, 'gi');
+      return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+    }
+    
+    // 复制路径到剪贴板
+    function copyPath(event, path) {
+      event.stopPropagation();
+      navigator.clipboard.writeText(path).then(() => {
+        showToast('已复制路径: ' + path);
+      }).catch(err => {
+        // 降级方案
+        const textarea = document.createElement('textarea');
+        textarea.value = path;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast('已复制路径: ' + path);
+      });
+    }
+    
+    // Toast 通知
+    function showToast(message) {
+      // 移除现有的 toast
+      const existingToast = document.querySelector('.tree-toast');
+      if (existingToast) existingToast.remove();
+      
+      const toast = document.createElement('div');
+      toast.className = 'tree-toast animate-fade-in-up';
+      toast.innerHTML = \`
+        <span class="toast-icon">\${TREE_ICONS.copy}</span>
+        <span class="toast-message">\${message}</span>
+      \`;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.classList.add('toast-fade-out');
+        setTimeout(() => toast.remove(), 300);
+      }, 2000);
+    }
+    
     function refreshTree() {
       fileCount = 0;
       folderCount = 0;
       document.getElementById('fileTree').innerHTML = renderTree(fileTreeData);
       updateTreeStats();
+    }
+    
+    // 搜索处理
+    function handleSearch(query) {
+      searchQuery = query.trim();
+      
+      // 如果有搜索词，展开所有匹配的路径
+      if (searchQuery) {
+        expandedFolders.clear();
+        // 展开包含匹配项的所有父目录
+        function expandMatchingPaths(node, parentPath = '') {
+          const currentPath = parentPath ? \`\${parentPath}/\${node.name}\` : node.name;
+          if (node.children && nodeOrChildrenMatch(node, parentPath)) {
+            expandedFolders.add(currentPath);
+            node.children.forEach(child => expandMatchingPaths(child, currentPath));
+          }
+        }
+        expandMatchingPaths(fileTreeData);
+      }
+      
+      refreshTree();
+      
+      // 更新搜索结果计数
+      const statsEl = document.querySelector('.tree-stats');
+      if (statsEl && searchQuery) {
+        statsEl.innerHTML = \`搜索 "\${searchQuery}": \${folderCount} 文件夹, \${fileCount} 文件匹配\`;
+      }
+    }
+    
+    // 清除搜索
+    function clearSearch() {
+      searchQuery = '';
+      const searchInput = document.getElementById('treeSearchInput');
+      if (searchInput) searchInput.value = '';
+      refreshTree();
     }
     
     function updateTreeStats() {
@@ -510,8 +759,39 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
 
     // ========== Init Tree ==========
     const fileTreeData = ${JSON.stringify(fileTreeData)};
+    maxFileSize = calculateMaxFileSize(fileTreeData);
+    collectAllPaths(fileTreeData);
     expandedFolders.add(fileTreeData.name); // Default expand root
     refreshTree();
+    
+    // 初始化搜索框事件
+    const searchInput = document.getElementById('treeSearchInput');
+    const searchClearBtn = document.getElementById('treeSearchClear');
+    
+    if (searchInput) {
+      let debounceTimer;
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          handleSearch(e.target.value);
+        }, 200);
+        
+        // 显示/隐藏清除按钮
+        if (searchClearBtn) {
+          searchClearBtn.style.display = e.target.value ? 'flex' : 'none';
+        }
+      });
+      
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          clearSearch();
+        }
+      });
+    }
+    
+    if (searchClearBtn) {
+      searchClearBtn.addEventListener('click', clearSearch);
+    }
 
     // ========== Comparison Logic ==========
     const comparisonToggleBtn = document.getElementById('toggleComparisonBtn');

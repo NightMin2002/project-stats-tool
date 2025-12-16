@@ -2,7 +2,7 @@
 
 本项目采用模块化架构，职责清晰，便于 AI 辅助开发和维护。
 
-> **版本**: v3.2.0 Ω 极致美学版
+> **版本**: v3.3.0 Ω 模块化重构版
 
 ---
 
@@ -94,11 +94,18 @@ project-stats-tool/
 - **组件生成**: 提供 `generateHeader`, `generateCoreStats`, `generateFileTreeSection` 等函数。
 - **结构定义**: 定义基于 Grid 的现代页面结构。
 
-#### [`templates/styles.css.js`](../src/templates/styles.css.js:1) - CSS 样式
-**职责 (v3.0.0)**:
-- **视觉风格**: 定义 Glassmorphism（玻璃拟态）样式、CSS 变量主题色。
-- **动画效果**: 实现 `moonFloat` 月亮悬浮动画、卡片悬停效果。
-- **布局系统**: 使用 CSS Grid 实现响应式布局，适配移动端。
+#### [`templates/styles.css.js`](../src/templates/styles.css.js:1) - CSS 入口
+**职责 (v3.3.0)**:
+- **模块合并**: 重导出 `./styles/index.js`，向后兼容旧引用。
+
+#### [`templates/styles/`](../src/templates/styles/) - CSS 模块化目录 🆕
+**职责 (v3.3.0)**:
+- **[`base.css.js`](../src/templates/styles/base.css.js:1)**: CSS 变量、Nuclear Reset、Scrollbar、Selection。
+- **[`layout.css.js`](../src/templates/styles/layout.css.js:1)**: Grid 系统、Header、Section、响应式断点。
+- **[`components.css.js`](../src/templates/styles/components.css.js:1)**: 语言卡片、热力图、文件树、表格、Tooltip。
+- **[`animations.css.js`](../src/templates/styles/animations.css.js:1)**: 所有 @keyframes、动画工具类、Stagger 动画。
+- **[`forms.css.js`](../src/templates/styles/forms.css.js:1)**: **完整 Anti-Native 表单**：Input、Textarea、Checkbox、Radio、Toggle、Range、Select、Button。
+- **[`utilities.css.js`](../src/templates/styles/utilities.css.js:1)**: Flexbox、Spacing、Text、Performance 工具类。
 
 #### [`templates/scripts.js`](../src/templates/scripts.js:1) - 前端交互
 **职责 (v3.0.0)**:
@@ -222,5 +229,5 @@ project-stats.js (Main)
 ---
 
 **最后更新**: 2025-12-16
-**版本**: v3.2.0 (Ω 极致美学版)
+**版本**: v3.3.0 (Ω 模块化重构版)
 **维护**: Ω Code Agent

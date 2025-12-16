@@ -1,6 +1,6 @@
 /**
- * Night Theme HTML 组件模块 v3.2.0
- * 全面升级：SVG 图标集成、热力图组件、现代化布局结构
+ * Night Theme HTML 组件模块 v3.3.0
+ * 全面升级：SVG 图标集成、热力图组件、现代化布局结构、模块化CSS类
  * Ω Code Agent - UI Perfectionist Edition
  */
 
@@ -89,25 +89,25 @@ function generateHeader(projectName, subtitle = '项目统计可视化报告 · 
 function generateMetaCards(timestamp, projectType) {
   return `
   <div class="meta-grid">
-    <div class="meta-card">
+    <div class="meta-card hover-lift stagger-item">
       <div class="meta-icon-wrapper">${ICONS.calendar}</div>
       <div class="meta-content">
         <div class="meta-label">生成时间</div>
-        <div class="meta-value">${timestamp}</div>
+        <div class="meta-value selectable">${timestamp}</div>
       </div>
     </div>
-    <div class="meta-card">
+    <div class="meta-card hover-lift stagger-item">
       <div class="meta-icon-wrapper">${ICONS.tag}</div>
       <div class="meta-content">
         <div class="meta-label">项目类型</div>
         <div class="meta-value">${projectType}</div>
       </div>
     </div>
-    <div class="meta-card">
+    <div class="meta-card hover-lift stagger-item">
       <div class="meta-icon-wrapper">${ICONS.info}</div>
       <div class="meta-content">
         <div class="meta-label">工具版本</div>
-        <div class="meta-value">v3.2.0</div>
+        <div class="meta-value">v3.3.0</div>
       </div>
     </div>
   </div>`;
@@ -140,16 +140,16 @@ function generateComparisonSection(comparison, formatNumber) {
     const trendIcon = change.trend === 'up' ? ICONS.trendUp : change.trend === 'down' ? ICONS.trendDown : ICONS.trendFlat;
 
     return `
-      <div class="comp-card">
+      <div class="comp-card hover-lift stagger-item">
         <div class="comp-header">
           ${label}
         </div>
         <div class="comp-diff ${trendClass}">
           ${trendIcon}
           <span>${change.diffFormatted}</span>
-          <span style="font-size: 0.8em; opacity: 0.8;">(${change.rateFormatted})</span>
+          <span class="text-sm opacity-75">(${change.rateFormatted})</span>
         </div>
-        <div style="font-size: 0.8em; color: var(--text-secondary); display: flex; justify-content: space-between;">
+        <div class="text-sm text-secondary flex justify-between mt-2">
           <span>前: ${formatNumber(change.old)}</span>
           <span>现: ${formatNumber(change.new)}</span>
         </div>
@@ -158,10 +158,10 @@ function generateComparisonSection(comparison, formatNumber) {
   }).join('');
 
   return `
-  <div class="section" id="comparisonSection">
+  <div class="section animate-fade-in-up" id="comparisonSection">
     <div class="section-header">
       <h2 class="section-title">${ICONS.history} 历史对比分析</h2>
-      <button id="toggleComparisonBtn" class="btn btn-primary">隐藏对比</button>
+      <button id="toggleComparisonBtn" class="btn btn-primary btn-sm">隐藏对比</button>
     </div>
     <div class="meta-label" style="margin-bottom: 1rem;">
       对比基准: <span style="color: var(--accent-secondary);">${previousLabel}</span>
@@ -185,7 +185,7 @@ function generateCoreStats(stats, formatNumber, formatSize, languageStats) {
       <h2 class="section-title">${ICONS.chartBar} 核心统计</h2>
     </div>
     <div class="stats-grid">
-      <div class="stat-card">
+      <div class="stat-card will-change-transform stagger-item">
         <div class="stat-header">
           <div class="stat-icon">${ICONS.files}</div>
           <div class="stat-label">文件统计</div>
@@ -193,7 +193,7 @@ function generateCoreStats(stats, formatNumber, formatSize, languageStats) {
         <div class="stat-value">${formatNumber(stats.files.total)}</div>
         <div class="stat-sub">总计文件数量</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card will-change-transform stagger-item">
         <div class="stat-header">
           <div class="stat-icon">${ICONS.chars}</div>
           <div class="stat-label">总字符数</div>
@@ -201,7 +201,7 @@ function generateCoreStats(stats, formatNumber, formatSize, languageStats) {
         <div class="stat-value">${formatNumber(stats.text.totalChars)}</div>
         <div class="stat-sub">${formatSize(stats.text.totalChars)}</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card will-change-transform stagger-item">
         <div class="stat-header">
           <div class="stat-icon">${ICONS.code}</div>
           <div class="stat-label">代码行数</div>
@@ -209,7 +209,7 @@ function generateCoreStats(stats, formatNumber, formatSize, languageStats) {
         <div class="stat-value">${formatNumber(stats.code.totalLines)}</div>
         <div class="stat-sub">有效代码行</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card will-change-transform stagger-item">
         <div class="stat-header">
           <div class="stat-icon">${ICONS.tokens}</div>
           <div class="stat-label">估算 Tokens</div>
@@ -229,8 +229,8 @@ function generateCoreStats(stats, formatNumber, formatSize, languageStats) {
       ${Object.entries(languageStats)
         .sort((a, b) => b[1].totalLines - a[1].totalLines)
         .slice(0, 6)
-        .map(([lang, langStats]) => `
-          <div class="lang-card">
+        .map(([lang, langStats], index) => `
+          <div class="lang-card hover-border-glow stagger-item" style="animation-delay: ${0.1 + index * 0.05}s;">
             <div class="lang-header">
               <div class="lang-name">${lang}</div>
               <div style="font-size: 0.85rem; color: var(--text-secondary);">${formatNumber(langStats.files)} 文件</div>
@@ -346,19 +346,38 @@ function generateTrendSection(hasTrendData, trendDataLength) {
  * 生成项目结构区域
  */
 function generateFileTreeSection() {
+  // 搜索图标 SVG
+  const searchIcon = `<svg class="icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/></svg>`;
+  const clearIcon = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>`;
+  
   return `
   <div class="section">
-    <div class="section-header">
+    <div class="section-header" style="flex-wrap: wrap; gap: 1rem;">
       <h2 class="section-title">${ICONS.folder} 项目结构</h2>
-      <div class="tree-controls">
-        <button onclick="expandAll()" class="btn">全部展开</button>
-        <button onclick="collapseAll()" class="btn">全部折叠</button>
+      <div class="tree-controls" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <div class="tree-search-wrapper">
+          <span class="tree-search-icon">${searchIcon}</span>
+          <input
+            type="text"
+            id="treeSearchInput"
+            class="tree-search-input"
+            placeholder="搜索文件..."
+            autocomplete="off"
+          />
+          <button id="treeSearchClear" class="tree-search-clear" style="display:none;">${clearIcon}</button>
+        </div>
+        <button onclick="expandAll()" class="btn btn-ghost btn-sm">展开</button>
+        <button onclick="collapseAll()" class="btn btn-ghost btn-sm">折叠</button>
       </div>
     </div>
-    <div class="tree-stats" style="margin-bottom: 1rem; color: var(--text-secondary);">
+    <div class="tree-stats" style="margin-bottom: 0.75rem; color: var(--text-secondary); font-size: 0.875rem;">
       <!-- populated by js -->
     </div>
-    <div id="fileTree" class="file-tree-container"></div>
+    <div class="tree-hint" style="margin-bottom: 1rem; font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;">
+      <svg class="icon icon-sm" viewBox="0 0 24 24" style="flex-shrink: 0;"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z" fill="currentColor"/></svg>
+      <span>双击文件可复制路径</span>
+    </div>
+    <div id="fileTree" class="file-tree-container" style="max-height: 700px;"></div>
   </div>`;
 }
 
@@ -477,13 +496,16 @@ function generateHeatmapSection(fileList, formatSize) {
     return 0;
   };
   
-  const heatmapItems = topFiles.map(file => {
+  const heatmapItems = topFiles.map((file, index) => {
     const level = getHeatLevel(file.size);
     const fileName = file.relativePath.split('/').pop() || file.relativePath;
     const dirPath = file.relativePath.split('/').slice(0, -1).join('/');
     
     return `
-      <div class="heatmap-item heat-level-${level}" data-tooltip="${file.relativePath}">
+      <div class="heatmap-item heat-level-${level} stagger-item"
+           data-tooltip="${file.relativePath}"
+           data-tooltip-pos="bottom"
+           style="animation-delay: ${Math.min(0.05 + index * 0.02, 0.5)}s;">
         <span class="heatmap-bar"></span>
         <span class="heatmap-name">${fileName}</span>
         <span class="heatmap-size">${formatSize(file.size)}</span>
@@ -536,8 +558,9 @@ function generateHeatmapSection(fileList, formatSize) {
  */
 function generateFooter(timestamp) {
   return `
-  <div class="footer">
-    由项目统计工具 v3.2.0 自动生成 | ${timestamp} | Night Theme V3.2 | Ω
+  <div class="footer animate-fade-in">
+    <p class="mb-2">由项目统计工具 v3.3.0 自动生成</p>
+    <p class="text-muted text-sm">${timestamp} · Night Theme V3.3 · Ω Code Agent</p>
   </div>`;
 }
 

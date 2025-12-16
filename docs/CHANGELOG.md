@@ -1,5 +1,42 @@
 # 📋 更新日志
 
+## [v3.3.0] - 2025-12-16 - CSS 模块化重构 & 文件树增强
+
+### ✨ 新功能
+
+#### CSS 模块化架构
+- 将 1336 行的 `styles.css.js` 拆分为 6 个独立模块（共 88,000+ 字符）
+- 新增 `src/templates/styles/` 目录：
+  - `base.css.js` - 60+ CSS 变量、Nuclear Reset、自定义滚动条
+  - `layout.css.js` - Grid 系统、Header、Section、响应式断点
+  - `components.css.js` - 卡片、热力图、文件树、表格、Tooltip
+  - `animations.css.js` - 30+ @keyframes 动画、Stagger 交错动画
+  - `forms.css.js` - **完整 Anti-Native 表单系统**（Input/Checkbox/Radio/Range/Select）
+  - `utilities.css.js` - Tailwind 风格工具类、GPU 加速提示
+  - `index.js` - 模块合并入口
+
+#### 文件树增强
+- **文件类型着色**：30+ 扩展名颜色映射（JS 金黄、TS 蓝、Vue 绿...）
+- **实时搜索**：防抖输入、递归匹配、高亮匹配词
+- **大小热力图**：5 级色阶（tiny → small → medium → large → huge）
+- **复制路径**：双击文件复制路径 + Toast 通知
+
+### 🎨 UI 改进
+- Meta/Stat/Lang 卡片添加 `hover-lift`、`stagger-item` 动画
+- 热力图项添加交错淡入动画
+- 按钮细分 `btn-ghost`、`btn-sm` 样式
+- 自定义 Tooltip 替代原生 title（Anti-Native 合规）
+
+### 🔧 修复
+- 表格悬浮横滚问题（移除 transform）
+- Toast 位置抖动（统一 translateX(-50%)）
+- Tooltip 被容器裁剪（提升 z-index + 顶部显示）
+
+### 📝 文档
+- 更新 `AI-项目结构说明.md` 反映新架构
+
+---
+
 ## [v3.2.0] - 2025-12-16 - Ω 极致美学版
 
 ### 🎨 视觉体验全面升级
