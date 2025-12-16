@@ -1,6 +1,7 @@
 /**
- * Night Theme HTML 组件模块 v3.0.0
- * 全面升级：SVG 图标集成、现代化布局结构
+ * Night Theme HTML 组件模块 v3.2.0
+ * 全面升级：SVG 图标集成、热力图组件、现代化布局结构
+ * Ω Code Agent - UI Perfectionist Edition
  */
 
 // ================= SVG ICONS =================
@@ -35,7 +36,11 @@ const ICONS = {
 
   // Misc
   complexity: `<svg class="icon" viewBox="0 0 24 24"><path d="M13.5 2c-1.93 0-3.5 1.57-3.5 3.5H8v10h2v3.5c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5V5.5c0-1.93-1.57-3.5-3.5-3.5zm0 17c-1.1 0-2-.9-2-2v-3.5h4V17c0 1.1-.9 2-2 2zm0-7.5h-2v-4h4v4zm0-6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>`,
-  menu: `<svg class="icon" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>`
+  menu: `<svg class="icon" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>`,
+  
+  // Heatmap
+  heatmap: `<svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>`,
+  fire: `<svg class="icon" viewBox="0 0 24 24"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>`
 };
 
 /**
@@ -102,7 +107,7 @@ function generateMetaCards(timestamp, projectType) {
       <div class="meta-icon-wrapper">${ICONS.info}</div>
       <div class="meta-content">
         <div class="meta-label">工具版本</div>
-        <div class="meta-value">v3.0.0</div>
+        <div class="meta-value">v3.2.0</div>
       </div>
     </div>
   </div>`;
@@ -443,12 +448,96 @@ function generateComplexitySection(stats, formatNumber, formatSize) {
 }
 
 /**
+ * 生成文件大小热力图区域
+ * @param {Array} fileList - 文件列表 [{relativePath, size, lines}]
+ * @param {Function} formatSize - 格式化函数
+ * @returns {string} HTML
+ */
+function generateHeatmapSection(fileList, formatSize) {
+  if (!fileList || fileList.length === 0) {
+    return '';
+  }
+  
+  // 按大小排序并取前50个
+  const topFiles = [...fileList]
+    .sort((a, b) => b.size - a.size)
+    .slice(0, 50);
+  
+  if (topFiles.length === 0) return '';
+  
+  // 计算热力图等级
+  const maxSize = topFiles[0].size;
+  const getHeatLevel = (size) => {
+    const ratio = size / maxSize;
+    if (ratio > 0.8) return 5;
+    if (ratio > 0.6) return 4;
+    if (ratio > 0.4) return 3;
+    if (ratio > 0.2) return 2;
+    if (ratio > 0.1) return 1;
+    return 0;
+  };
+  
+  const heatmapItems = topFiles.map(file => {
+    const level = getHeatLevel(file.size);
+    const fileName = file.relativePath.split('/').pop() || file.relativePath;
+    const dirPath = file.relativePath.split('/').slice(0, -1).join('/');
+    
+    return `
+      <div class="heatmap-item heat-level-${level}" data-tooltip="${file.relativePath}">
+        <span class="heatmap-bar"></span>
+        <span class="heatmap-name">${fileName}</span>
+        <span class="heatmap-size">${formatSize(file.size)}</span>
+      </div>
+    `;
+  }).join('');
+  
+  return `
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">${ICONS.heatmap} 文件大小热力图</h2>
+      <span style="color: var(--text-secondary); font-size: 0.875rem;">Top ${topFiles.length} 最大文件</span>
+    </div>
+    <div class="heatmap-container">
+      <div class="heatmap-grid">
+        ${heatmapItems}
+      </div>
+      <div class="heatmap-legend">
+        <div class="legend-item">
+          <span class="legend-color" style="background: var(--heatmap-cold);"></span>
+          <span>小</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: var(--heatmap-cool);"></span>
+          <span>较小</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: #8b5cf6;"></span>
+          <span>中等</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: var(--heatmap-warm);"></span>
+          <span>较大</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: var(--heatmap-hot);"></span>
+          <span>大</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: var(--heatmap-fire);"></span>
+          <span>${ICONS.fire} 巨大</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/**
  * 生成页脚
  */
 function generateFooter(timestamp) {
   return `
   <div class="footer">
-    由项目统计工具 v3.0.0 自动生成 | ${timestamp} | 🌙 Night Theme V3
+    由项目统计工具 v3.2.0 自动生成 | ${timestamp} | Night Theme V3.2 | Ω
   </div>`;
 }
 
@@ -464,6 +553,7 @@ module.exports = {
   generateLanguageStatsTable,
   generateComplexitySection,
   generateComparisonSection,
+  generateHeatmapSection,
   generateFooter,
   ICONS // 导出 ICONS 供 scripts.js 可能使用 (如果需要动态插入)
 };

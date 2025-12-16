@@ -1,11 +1,12 @@
 /**
- * 版本号管理模块
+ * 版本号管理模块 v3.2.0
  * 统一管理项目版本号
+ * Ω Code Agent - UI Perfectionist Edition
  */
 
-const VERSION = '3.1.0';
-const VERSION_NAME = '交互进化版';
-const RELEASE_DATE = '2025-12-07';
+const VERSION = '3.2.0';
+const VERSION_NAME = 'Night Theme V3.2 Ω';
+const RELEASE_DATE = '2025-12-16';
 
 /**
  * 获取完整版本信息

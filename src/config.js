@@ -1,15 +1,16 @@
 /**
- * 配置管理模块
+ * 配置管理模块 v3.2.0
  * 集中管理所有配置项和常量
+ * 新增：支持自定义语言映射配置文件
  */
 
 const fs = require('fs');
 const path = require('path');
 
 /**
- * 语言扩展名映射（50+ 种编程语言）
+ * 默认语言扩展名映射（50+ 种编程语言）
  */
-const LANGUAGE_MAP = {
+const DEFAULT_LANGUAGE_MAP = {
   // Web 前端
   '.js': 'JavaScript', '.jsx': 'JavaScript', '.mjs': 'JavaScript',
   '.ts': 'TypeScript', '.tsx': 'TypeScript',
@@ -75,6 +76,87 @@ const LANGUAGE_MAP = {
   '.v': 'Verilog',
   '.vhd': 'VHDL'
 };
+
+/**
+ * 用户自定义语言映射（将在运行时合并）
+ */
+let customLanguageMap = {};
+
+/**
+ * 合并后的语言映射
+ */
+let LANGUAGE_MAP = { ...DEFAULT_LANGUAGE_MAP };
+
+/**
+ * 加载自定义语言配置文件
+ * 支持从项目根目录或工具目录读取 .stats-languages.json
+ * @param {string} projectDir - 项目目录
+ * @param {string} toolDir - 工具目录
+ * @returns {object} 加载的配置
+ */
+function loadCustomLanguageConfig(projectDir, toolDir) {
+  const configNames = ['.stats-languages.json', 'stats-languages.json', '.project-stats.json'];
+  const searchPaths = [projectDir, toolDir].filter(Boolean);
+  
+  for (const dir of searchPaths) {
+    for (const configName of configNames) {
+      const configPath = path.join(dir, configName);
+      
+      if (fs.existsSync(configPath)) {
+        try {
+          const content = fs.readFileSync(configPath, 'utf8');
+          const config = JSON.parse(content);
+          
+          console.log(`📋 已加载自定义语言配置: ${path.relative(process.cwd(), configPath)}`);
+          
+          // 合并语言映射
+          if (config.languages && typeof config.languages === 'object') {
+            customLanguageMap = config.languages;
+            LANGUAGE_MAP = { ...DEFAULT_LANGUAGE_MAP, ...customLanguageMap };
+          }
+          
+          // 返回完整配置（可能包含其他选项）
+          return {
+            loaded: true,
+            path: configPath,
+            config
+          };
+        } catch (error) {
+          console.warn(`⚠️  语言配置文件格式错误: ${configPath}`);
+          console.warn(`   ${error.message}`);
+        }
+      }
+    }
+  }
+  
+  return { loaded: false };
+}
+
+/**
+ * 获取当前语言映射
+ * @returns {object}
+ */
+function getLanguageMap() {
+  return LANGUAGE_MAP;
+}
+
+/**
+ * 手动添加语言映射
+ * @param {string} ext - 扩展名（如 '.xyz'）
+ * @param {string} language - 语言名称
+ */
+function addLanguageMapping(ext, language) {
+  const normalizedExt = ext.startsWith('.') ? ext : `.${ext}`;
+  LANGUAGE_MAP[normalizedExt.toLowerCase()] = language;
+}
+
+/**
+ * 重置语言映射为默认值
+ */
+function resetLanguageMap() {
+  customLanguageMap = {};
+  LANGUAGE_MAP = { ...DEFAULT_LANGUAGE_MAP };
+}
 
 /**
  * 创建配置对象
@@ -247,6 +329,11 @@ function initStats(targetDir) {
 
 module.exports = {
   LANGUAGE_MAP,
+  DEFAULT_LANGUAGE_MAP,
+  getLanguageMap,
+  loadCustomLanguageConfig,
+  addLanguageMapping,
+  resetLanguageMap,
   createConfig,
   loadGitignorePatterns,
   initStats

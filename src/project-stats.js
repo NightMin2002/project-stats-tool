@@ -25,7 +25,7 @@ const readline = require('readline');
 const { getVersion, getVersionInfo } = require('./version');
 
 // 导入配置模块
-const { createConfig, loadGitignorePatterns, initStats } = require('./config');
+const { createConfig, loadGitignorePatterns, initStats, loadCustomLanguageConfig } = require('./config');
 
 // 导入核心模块
 const { scanProject } = require('./core/project-scanner');
@@ -356,6 +356,9 @@ async function main() {
     
     // 获取工具根目录（向上两级：src/ -> project-stats-tool/）
     const toolRoot = path.resolve(__dirname, '..');
+    
+    // 加载自定义语言配置（如果存在）
+    loadCustomLanguageConfig(targetDir, toolRoot);
     
     // 初始化配置和数据，传入 toolRoot 以支持智能自身排除
     const config = createConfig(targetDir, toolRoot);

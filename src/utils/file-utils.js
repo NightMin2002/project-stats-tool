@@ -86,15 +86,64 @@ function shouldExclude(filePath, config, gitignorePatterns) {
     }
   }
   
-  // 3. 检查 .gitignore 规则
+  // 3. 检查 .gitignore 规则（改进版：更精确的匹配逻辑）
   for (const pattern of gitignorePatterns) {
+    // 跳过空模式
+    if (!pattern) continue;
+    
+    // 处理通配符模式（如 *.log, build/*, *.min.js 等）
     if (pattern.includes('*')) {
-      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-      if (regex.test(normalizedPath)) {
-        return true;
+      // 转换 gitignore glob 模式为正则表达式
+      // 将 ** 转换为匹配任意路径的模式
+      // 将 * 转换为匹配非路径分隔符的模式
+      let regexPattern = pattern
+        .replace(/\./g, '\\.')           // 转义点号
+        .replace(/\*\*/g, '<<<GLOBSTAR>>>')  // 临时标记 **
+        .replace(/\*/g, '[^/]*')         // * 匹配非斜杠字符
+        .replace(/<<<GLOBSTAR>>>/g, '.*'); // ** 匹配任意字符（包括斜杠）
+      
+      // 如果模式不以路径分隔符开头，允许在任意目录层级匹配
+      if (!pattern.startsWith('/')) {
+        regexPattern = '(^|/)' + regexPattern;
+      } else {
+        regexPattern = '^' + regexPattern.slice(1); // 移除开头的 /
       }
-    } else if (normalizedPath.includes(pattern)) {
-      return true;
+      
+      // 如果模式以 / 结尾，只匹配目录
+      if (pattern.endsWith('/')) {
+        regexPattern = regexPattern.slice(0, -1) + '(/|$)';
+      } else {
+        regexPattern = regexPattern + '($|/)';
+      }
+      
+      try {
+        const regex = new RegExp(regexPattern);
+        if (regex.test(normalizedPath)) {
+          return true;
+        }
+      } catch (e) {
+        // 正则表达式无效，跳过此模式
+      }
+    } else {
+      // 非通配符模式：作为目录名或路径段精确匹配
+      // 不再使用 includes()，改为检查路径段是否精确匹配
+      
+      // 如果模式包含路径分隔符，作为路径前缀匹配
+      if (pattern.includes('/')) {
+        const cleanPattern = pattern.replace(/^\//, '').replace(/\/$/, '');
+        if (normalizedPath === cleanPattern ||
+            normalizedPath.startsWith(cleanPattern + '/')) {
+          return true;
+        }
+      } else {
+        // 单个名称：检查是否是路径中的某个完整段（目录或文件名）
+        // 例如模式 "build" 应该匹配 "build/xxx" 或 "src/build/xxx"
+        // 但不应该匹配 "rebuild/xxx" 或 "builder.tsx"
+        const pathSegments = normalizedPath.split('/');
+        if (pathSegments.includes(pattern)) {
+          return true;
+        }
+      }
     }
   }
   

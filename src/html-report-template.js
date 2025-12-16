@@ -1,12 +1,13 @@
 /**
- * HTML 报告模板生成器 v2.11.0 (模块化版本)
+ * HTML 报告模板生成器 v3.2.0 (模块化版本)
+ * Ω Code Agent - UI Perfectionist Edition
  *
- * 🆕 v2.11.0 新增:
- * - 完全模块化架构（CSS/JS/组件分离）
- * - 全局禁止文字选中（user-select: none）
- * - 保留代码区域可选中功能
- * - 优化Night Theme美观度
- * - 改进交互动画效果
+ * 🆕 v3.2.0 新增:
+ * - 文件大小热力图可视化
+ * - 增强动画效果和交互
+ * - 自定义选择高亮
+ * - 响应式优化
+ * - 打印样式支持
  *
  * 📂 模块结构:
  * - templates/styles.css.js - 完整CSS样式
@@ -40,6 +41,7 @@ const {
   generateLanguageStatsTable,
   generateComplexitySection,
   generateComparisonSection,
+  generateHeatmapSection,
   generateFooter
 } = require('./templates/components.js');
 
@@ -70,6 +72,7 @@ module.exports = function generateEnhancedHTML(
   const chartSection = generateChartSection();
   const languageCodeSection = generateLanguageCodeChart(hasLanguageStats);
   const trendSection = generateTrendSection(hasTrendData, hasTrendData ? trendData.totalLines.length : 0);
+  const heatmapSection = generateHeatmapSection(stats.files.list || [], formatSize);
   const fileTreeSection = generateFileTreeSection();
   const languageTableSection = generateLanguageStatsTable(stats.languageStats || {}, formatNumber, formatSize);
   const complexitySection = generateComplexitySection(stats, formatNumber, formatSize);
@@ -92,6 +95,7 @@ module.exports = function generateEnhancedHTML(
     ${chartSection}
     ${languageCodeSection}
     ${trendSection}
+    ${heatmapSection}
     ${fileTreeSection}
     ${languageTableSection}
     ${complexitySection}

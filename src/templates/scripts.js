@@ -343,14 +343,14 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
     });
     ` : ''}
 
-    // ========== 文件树逻辑 (SVG版) ==========
+    // ========== 文件树逻辑 (SVG版 - 优化版) ==========
     
     // SVG Icons Definition
     const TREE_ICONS = {
       folder: \`<svg class="tree-icon" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="currentColor"/></svg>\`,
       file: \`<svg class="tree-icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/></svg>\`,
-      arrowRight: \`<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" fill="currentColor"/></svg>\`,
-      arrowDown: \`<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17 16.59 8.59 18 10l-6 6-6-6 1.41-1.41z" fill="currentColor"/></svg>\`,
+      arrowRight: \`<svg class="icon icon-sm tree-arrow" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" fill="currentColor"/></svg>\`,
+      arrowDown: \`<svg class="icon icon-sm tree-arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17 16.59 8.59 18 10l-6 6-6-6 1.41-1.41z" fill="currentColor"/></svg>\`,
       dot: \`<svg class="icon icon-sm" viewBox="0 0 24 24" style="opacity: 0.3;"><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>\`
     };
 
@@ -362,6 +362,7 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
       if (!node) return '';
       
       const currentPath = parentPath ? \`\${parentPath}/\${node.name}\` : node.name;
+      const escapedPath = currentPath.replace(/'/g, "\\\\'");
       const indent = \`<span style="display:inline-block; width:\${level * 1.5}rem"></span>\`;
       let html = '';
       
@@ -370,16 +371,17 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
         const hasChildren = node.children && node.children.length > 0;
         const isExpanded = expandedFolders.has(currentPath);
         
-        // Icon selection
-        const expandIcon = hasChildren 
-          ? (isExpanded ? TREE_ICONS.arrowDown : TREE_ICONS.arrowRight) 
+        // Icon selection - 使用 data-expanded 属性便于后续切换
+        const expandIcon = hasChildren
+          ? (isExpanded ? TREE_ICONS.arrowDown : TREE_ICONS.arrowRight)
           : TREE_ICONS.dot;
           
         const itemClass = hasChildren ? 'tree-folder tree-item' : 'tree-folder tree-item disabled';
-        const clickAttr = hasChildren ? \`onclick="toggleFolder(this, '\${currentPath}')"\` : '';
+        const clickAttr = hasChildren ? \`onclick="toggleFolder(event, '\${escapedPath}')"\` : '';
+        const dataAttr = hasChildren ? \`data-path="\${escapedPath}" data-expanded="\${isExpanded}"\` : '';
         
-        html += \`<div class="\${itemClass}" \${clickAttr}>\`;
-        html += \`\${indent}\${expandIcon} \${TREE_ICONS.folder} <span class="tree-name">\${node.name}</span>\`;
+        html += \`<div class="\${itemClass}" \${clickAttr} \${dataAttr}>\`;
+        html += \`\${indent}<span class="tree-expand-icon">\${expandIcon}</span> \${TREE_ICONS.folder} <span class="tree-name">\${node.name}</span>\`;
         if (hasChildren) {
           html += \` <span class="tree-meta">\${node.children.length} items</span>\`;
         }
@@ -387,7 +389,7 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
         
         if (hasChildren) {
           const childrenClass = isExpanded ? 'tree-children open' : 'tree-children';
-          html += \`<div class="\${childrenClass}">\`;
+          html += \`<div class="\${childrenClass}" data-parent="\${escapedPath}">\`;
           node.children
             .sort((a, b) => {
               if (a.type === b.type) return a.name.localeCompare(b.name);
@@ -401,7 +403,7 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
       } else {
         fileCount++;
         const sizeLabel = node.size ? formatBytes(node.size) : '';
-        html += \`<div class="tree-item tree-file" title="\${currentPath}">\`;
+        html += \`<div class="tree-item tree-file" data-tooltip="\${currentPath}">\`;
         html += \`\${indent}<span style="width:1rem;display:inline-block"></span>\${TREE_ICONS.file} <span class="tree-name">\${node.name}</span>\`;
         if (sizeLabel) {
           html += \` <span class="tree-meta">\${sizeLabel}</span>\`;
@@ -412,13 +414,31 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
       return html;
     }
     
-    function toggleFolder(element, path) {
-      if (expandedFolders.has(path)) {
+    // 优化：直接操作DOM，不重新渲染整个树
+    function toggleFolder(event, path) {
+      event.stopPropagation();
+      
+      const folderEl = event.currentTarget;
+      const childrenEl = folderEl.nextElementSibling;
+      const iconEl = folderEl.querySelector('.tree-expand-icon');
+      
+      if (!childrenEl || !childrenEl.classList.contains('tree-children')) return;
+      
+      const isExpanded = expandedFolders.has(path);
+      
+      if (isExpanded) {
+        // 折叠
         expandedFolders.delete(path);
+        childrenEl.classList.remove('open');
+        folderEl.setAttribute('data-expanded', 'false');
+        if (iconEl) iconEl.innerHTML = TREE_ICONS.arrowRight;
       } else {
+        // 展开
         expandedFolders.add(path);
+        childrenEl.classList.add('open');
+        folderEl.setAttribute('data-expanded', 'true');
+        if (iconEl) iconEl.innerHTML = TREE_ICONS.arrowDown;
       }
-      refreshTree();
     }
     
     function formatBytes(bytes) {
@@ -430,7 +450,6 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
     function refreshTree() {
       fileCount = 0;
       folderCount = 0;
-      // Use renderTree to generate content
       document.getElementById('fileTree').innerHTML = renderTree(fileTreeData);
       updateTreeStats();
     }
@@ -443,6 +462,7 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
     }
     
     function expandAll() {
+      // 收集所有路径
       function collectAllPaths(node, parentPath = '') {
         const currentPath = parentPath ? \`\${parentPath}/\${node.name}\` : node.name;
         if (node.type === 'directory' && node.children && node.children.length > 0) {
@@ -451,12 +471,41 @@ module.exports = function generateScripts(stats, fileTreeData, trendData) {
         }
       }
       collectAllPaths(fileTreeData);
-      refreshTree();
+      
+      // 直接操作DOM展开所有
+      document.querySelectorAll('.tree-children').forEach(el => {
+        el.classList.add('open');
+      });
+      document.querySelectorAll('.tree-folder[data-expanded]').forEach(el => {
+        el.setAttribute('data-expanded', 'true');
+        const iconEl = el.querySelector('.tree-expand-icon');
+        if (iconEl) iconEl.innerHTML = TREE_ICONS.arrowDown;
+      });
     }
     
     function collapseAll() {
       expandedFolders.clear();
-      refreshTree();
+      expandedFolders.add(fileTreeData.name); // 保留根目录展开
+      
+      // 直接操作DOM折叠所有（除了根目录）
+      document.querySelectorAll('.tree-children').forEach((el, index) => {
+        if (index === 0) {
+          el.classList.add('open'); // 保留根目录
+        } else {
+          el.classList.remove('open');
+        }
+      });
+      document.querySelectorAll('.tree-folder[data-expanded]').forEach((el, index) => {
+        if (index === 0) {
+          el.setAttribute('data-expanded', 'true');
+          const iconEl = el.querySelector('.tree-expand-icon');
+          if (iconEl) iconEl.innerHTML = TREE_ICONS.arrowDown;
+        } else {
+          el.setAttribute('data-expanded', 'false');
+          const iconEl = el.querySelector('.tree-expand-icon');
+          if (iconEl) iconEl.innerHTML = TREE_ICONS.arrowRight;
+        }
+      });
     }
 
     // ========== Init Tree ==========

@@ -2,6 +2,8 @@
 
 本项目采用模块化架构，职责清晰，便于 AI 辅助开发和维护。
 
+> **版本**: v3.2.0 Ω 极致美学版
+
 ---
 
 ## 📁 目录结构
@@ -39,7 +41,8 @@ project-stats-tool/
 │   │   │
 │   └── utils/                    # 通用工具
 │       ├── file-utils.js         # 文件类型判断、路径处理、排除规则、二进制检测
-│       └── formatters.js         # 数字和文件大小格式化
+│       ├── formatters.js         # 数字和文件大小格式化
+│       └── progress-bar.js       # 🆕 CLI 进度条模块
 │
 ├── lib/                          # 第三方库（本地化）
 │   ├── chart.min.js              # Chart.js v3.9.1（趋势图表）
@@ -60,12 +63,13 @@ project-stats-tool/
 ├── 查看历史.bat                  # 历史查看脚本
 ├── package.json                  # 项目元数据 (CommonJS)
 ├── README.md                     # 用户文档
+├── stats-languages.example.json  # 🆕 自定义语言配置示例
 └── LICENSE                       # MIT许可证
 ```
 
 ---
 
-## 🎯 模块职责 (v3.1.0)
+## 🎯 模块职责 (v3.2.0)
 
 ### 入口层
 
@@ -158,13 +162,20 @@ project-stats-tool/
 
 #### [`utils/file-utils.js`](../src/utils/file-utils.js:1) - 文件工具
 **职责**:
-- **v3.1.0 升级**: `shouldExclude` 逻辑重构，支持精确路径片段匹配，修复 `build` 等关键词误伤问题。
+- **v3.2.0 升级**: `.gitignore` 规则匹配从模糊匹配重构为精确路径段匹配，支持 `*` 和 `**` glob 模式。
 - **智能自我排除**: 仅在非目标扫描（即扫描父级）时排除工具自身。
 - **二进制检测**: 优化 UTF-16 识别逻辑。
 
+#### [`utils/progress-bar.js`](../src/utils/progress-bar.js:1) - CLI 进度条 🆕
+**职责 (v3.2.0)**:
+- **ProgressBar**: 带百分比、ETA、动态消息的进度条。
+- **Spinner**: 无进度值的加载动画。
+- **MultiProgress**: 多阶段进度管理器。
+- **ANSI 颜色**: 支持 TTY 检测，非 TTY 环境自动降级。
+
 ---
 
-## 🔄 执行流程 (v3.1.0)
+## 🔄 执行流程 (v3.2.0)
 
 ```
 用户双击/拖拽 → 统计项目.bat (修正CWD)
@@ -175,23 +186,29 @@ project-stats.js (Main)
     - 自动发现同级目录
     - 用户输入选择
     ↓
-[1] 配置初始化 (含 toolRoot 识别)
+[1] 加载自定义语言配置 (loadCustomLanguageConfig) 🆕
+    - 读取 .stats-languages.json
     ↓
-[2] 极速扫描 (project-scanner.js)
+[2] 配置初始化 (含 toolRoot 识别)
+    ↓
+[3] 极速扫描 (project-scanner.js)
+    - 🆕 预扫描文件计数 (countFiles)
+    - 🆕 CLI 进度条显示 (progress-bar.js)
     - readdir withFileTypes
     - 并行处理 & 智能排除 (file-utils.js)
     ↓
-[3] 统计计算 (stats-calculator.js)
+[4] 统计计算 (stats-calculator.js)
     ↓
-[4] 历史管理 (history-manager.js)
+[5] 历史管理 (history-manager.js)
     - 识别项目名
     - 自动备份
     - 写入 results/<Project>/history.json
     ↓
-[5] 报告生成 & 保存 (output-manager.js)
+[6] 报告生成 & 保存 (output-manager.js)
+    - 🆕 文件热力图组件 (generateHeatmapSection)
     - 并行写入所有报告到 results/<Project>/<Timestamp>/
     ↓
-[6] 控制台输出
+[7] 控制台输出
 ```
 
 ---
@@ -204,6 +221,6 @@ project-stats.js (Main)
 
 ---
 
-**最后更新**: 2025-12-07  
-**版本**: v3.1.0 (Core & UI)  
+**最后更新**: 2025-12-16
+**版本**: v3.2.0 (Ω 极致美学版)
 **维护**: Ω Code Agent

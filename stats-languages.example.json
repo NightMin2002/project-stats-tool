@@ -1,0 +1,23 @@
+{
+  "$schema": "自定义语言映射配置文件示例",
+  "$comment": "将此文件重命名为 .stats-languages.json 放在项目根目录即可生效",
+  
+  "languages": {
+    ".myext": "MyLanguage",
+    ".xyz": "XYZ Script",
+    ".custom": "Custom Lang",
+    ".mdx": "MDX",
+    ".astro": "Astro",
+    ".svx": "Svelte Markdown"
+  },
+  
+  "extensions": {
+    "code": [".myext", ".xyz", ".custom"],
+    "docs": [".mdx"]
+  },
+  
+  "exclude": [
+    "my-custom-build",
+    "temp-files"
+  ]
+}

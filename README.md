@@ -1,21 +1,22 @@
 # 🌙 项目统计工具 (Project Stats Tool)
 
-[![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/version-3.2.0-blue.svg)](https://github.com)
 [![Node](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > 🎯 智能统计项目代码量、文字数和 Token 使用量的专业工具
 > 📈 支持历史对比分析、趋势可视化、50+ 种编程语言
-> 🌙 **Night Theme V3**: 动态月亮动画 + 玻璃拟态 UI + 全 SVG 图标系统
-> ✨ **v3.1.0 全新发布**：交互式选择与核心扫描引擎升级
+> 🌙 **Night Theme V3.2 Ω**: 热力图可视化 + 极致动画 + CLI 进度条
+> ✨ **v3.2.0 全新发布**：Ω 极致美学版
 
 ---
 
-## 🔄 最新增强（v3.1.0）
-- **🚀 交互式选择**：告别繁琐的命令行和拖拽！直接运行脚本，通过数字键快速选择要统计的项目。
-- **📂 全栈统计模式**：支持一键统计父目录下的所有子项目（如 Monorepo），生成全栈总报告。
-- **🎯 核心引擎升级**：重构路径排除逻辑，彻底解决 `build` 等关键词误伤问题；智能识别工具运行环境，完美兼容项目内运行。
-- **🐛 深度兼容**：修复 ESM/CommonJS 兼容性，增强对 `.ts`/`.tsx` 源码的识别能力。
+## 🔄 最新增强（v3.2.0）
+- **🔥 文件大小热力图**：全新可视化组件，以热力图形式展示项目中最大的50个文件，一眼识别"膨胀"文件。
+- **📊 CLI 进度条**：美观的终端进度显示，支持预扫描文件计数、ETA预估、当前文件名。
+- **🎨 视觉体验升级**：自定义选择高亮、渐变滚动条、卡片悬停动画、响应式布局优化。
+- **⚙️ 自定义语言配置**：支持 `.stats-languages.json` 配置文件，自定义文件扩展名与语言映射。
+- **🐛 精准匹配修复**：彻底修复 `.gitignore` 规则误排除问题（如 `layout.tsx` 因包含 `out` 被误排）。
 
 ---
 
@@ -69,13 +70,15 @@ node src/project-stats.js --help       # 显示帮助信息
 - ✅ 智能排除 `node_modules`、`.git`、`dist` 等
 - ✅ **智能自身排除**：自动防止将工具自身的代码计入统计结果（仅在统计父目录时生效）
 
-### 🌙 可视化报告 (V3.0.0)
-- **Night Theme V3** - 玻璃拟态风格 + 动态月亮动画
+### 🌙 可视化报告 (V3.2.0)
+- **Night Theme V3.2 Ω** - 玻璃拟态风格 + 动态月亮动画
 - **全 SVG 图标** - 高清矢量图标系统
 - **粒子动画** - 交互式动态背景
 - **趋势图表** - Chart.js 驱动的历史数据可视化
-- **文件树** - SVG 风格的可折叠项目结构视图
+- **文件树** - SVG 风格的可折叠项目结构视图（优化：无闪烁）
 - **语言级图表** - 按语言的代码量对比图
+- **🔥 文件热力图** - 文件大小可视化，快速定位大文件
+- **响应式布局** - 完美适配移动端和平板
 
 ---
 
@@ -169,6 +172,21 @@ node src/view-history.js compare 1 5    # 对比第1和第5条
 
 > ⚠️ **注意**: 此为粗略估算，实际值可能有 ±20% 的偏差
 
+### 自定义语言配置
+
+在项目根目录创建 `.stats-languages.json`：
+
+```json
+{
+  "languages": {
+    ".myext": "MyLanguage",
+    ".xyz": "XYZ Script"
+  }
+}
+```
+
+> 📝 参考 `stats-languages.example.json` 获取完整配置模板
+
 ### 独立性保证
 
 - ✅ **零外部依赖** - 仅使用 Node.js 内置模块（`fs`, `path`, `readline`）
@@ -234,6 +252,6 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 **Made with ❤️ and 🌙 by Ω Code Agent**
 
-⭐ **[立即体验 v3.1.0 交互进化版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
+⭐ **[立即体验 v3.2.0 Ω 极致美学版！](https://github.com/NightMin2002/project-stats-tool)** ⭐
 
 </div>
