@@ -158,16 +158,21 @@ module.exports = `
     transition: opacity var(--transition-normal);
   }
   
-  .meta-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--accent-secondary);
-    box-shadow: var(--shadow-glow);
+  @media (hover: hover) {
+    .meta-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent-secondary);
+      box-shadow: var(--shadow-glow);
+    }
+    .meta-card:hover::before {
+      opacity: 1;
+    }
+    .meta-card:hover .meta-icon-wrapper {
+      background: rgba(0, 212, 255, 0.2);
+      transform: scale(1.1);
+    }
   }
-  
-  .meta-card:hover::before {
-    opacity: 1;
-  }
-  
+
   .meta-icon-wrapper {
     width: 48px;
     height: 48px;
@@ -178,11 +183,6 @@ module.exports = `
     align-items: center;
     justify-content: center;
     transition: all var(--transition-normal);
-  }
-  
-  .meta-card:hover .meta-icon-wrapper {
-    background: rgba(0, 212, 255, 0.2);
-    transform: scale(1.1);
   }
   
   .meta-content { flex: 1; }
@@ -285,14 +285,15 @@ module.exports = `
     transform-origin: left;
   }
   
-  .stat-card:hover {
-    transform: translateY(-4px) scale(1.02);
-    border-color: var(--accent-secondary);
-    box-shadow: var(--shadow-glow);
-  }
-  
-  .stat-card:hover::before {
-    transform: scaleX(1);
+  @media (hover: hover) {
+    .stat-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      border-color: var(--accent-secondary);
+      box-shadow: var(--shadow-glow);
+    }
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
   }
   
   .stat-card::after {
@@ -325,9 +326,11 @@ module.exports = `
     transition: all var(--transition-normal);
   }
   
-  .stat-card:hover .stat-icon {
-    background: rgba(0, 255, 136, 0.15);
-    transform: rotate(5deg) scale(1.1);
+  @media (hover: hover) {
+    .stat-card:hover .stat-icon {
+      background: rgba(0, 255, 136, 0.15);
+      transform: rotate(5deg) scale(1.1);
+    }
   }
   
   .stat-label {
@@ -377,9 +380,11 @@ module.exports = `
     backdrop-filter: blur(10px);
   }
   
-  .chart-container:hover {
-    border-color: var(--border-hover);
-    box-shadow: var(--shadow-glow);
+  @media (hover: hover) {
+    .chart-container:hover {
+      border-color: var(--border-hover);
+      box-shadow: var(--shadow-glow);
+    }
   }
   
   .chart-title {
@@ -432,13 +437,14 @@ module.exports = `
     transition: opacity var(--transition-normal);
   }
   
-  .comp-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--border-hover);
-  }
-  
-  .comp-card:hover::before {
-    opacity: 1;
+  @media (hover: hover) {
+    .comp-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-hover);
+    }
+    .comp-card:hover::before {
+      opacity: 1;
+    }
   }
   
   .comp-header {

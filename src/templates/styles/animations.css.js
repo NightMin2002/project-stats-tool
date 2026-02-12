@@ -452,33 +452,20 @@ module.exports = `
   .hover-lift {
     transition: transform var(--transition-normal), box-shadow var(--transition-normal);
   }
-  
-  .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-  }
-  
+
   .hover-scale {
     transition: transform var(--transition-normal);
   }
-  
-  .hover-scale:hover {
-    transform: scale(1.05);
-  }
-  
+
   .hover-glow {
     transition: box-shadow var(--transition-normal);
   }
-  
-  .hover-glow:hover {
-    box-shadow: var(--shadow-glow);
-  }
-  
+
   .hover-shine {
     position: relative;
     overflow: hidden;
   }
-  
+
   .hover-shine::before {
     content: '';
     position: absolute;
@@ -494,18 +481,29 @@ module.exports = `
     );
     transition: left var(--transition-slow);
   }
-  
-  .hover-shine:hover::before {
-    left: 100%;
-  }
-  
+
   .hover-border-glow {
     transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
   }
-  
-  .hover-border-glow:hover {
-    border-color: var(--accent-secondary);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+
+  @media (hover: hover) {
+    .hover-lift:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .hover-scale:hover {
+      transform: scale(1.05);
+    }
+    .hover-glow:hover {
+      box-shadow: var(--shadow-glow);
+    }
+    .hover-shine:hover::before {
+      left: 100%;
+    }
+    .hover-border-glow:hover {
+      border-color: var(--accent-secondary);
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+    }
   }
 
   /* ========================================

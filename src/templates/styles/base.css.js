@@ -71,6 +71,7 @@ module.exports = `
     /* === Heatmap Colors === */
     --heatmap-cold: #1e3a5f;
     --heatmap-cool: #2563eb;
+    --heatmap-medium: #8b5cf6;
     --heatmap-warm: #f59e0b;
     --heatmap-hot: #ef4444;
     --heatmap-fire: #dc2626;

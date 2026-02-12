@@ -1,8 +1,54 @@
 /**
- * Night Theme HTML 组件模块 v3.3.0
- * 全面升级：SVG 图标集成、热力图组件、现代化布局结构、模块化CSS类
+ * Night Theme HTML 组件模块
+ * XSS 防护、Sparkline、Treemap 热力图、表格排序、图表联动
  * Ω Code Agent - UI Perfectionist Edition
  */
+
+const { getVersion, VERSION_NAME } = require('../version');
+
+// ================= UTILITIES =================
+
+function escapeHtml(str) {
+  if (typeof str !== 'string') return String(str ?? '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function generateSparkline(data, color, id) {
+  if (!data || data.length < 2) return '';
+  const values = data.map(d => d.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const W = 120, H = 32, P = 2;
+  const points = values.map((v, i) => {
+    const x = P + (i / (values.length - 1)) * (W - P * 2);
+    const y = H - P - ((v - min) / range) * (H - P * 2);
+    return [x.toFixed(1), y.toFixed(1)];
+  });
+  const linePath = points.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' ');
+  const areaPath = `${linePath} L${points[points.length - 1][0]},${H} L${points[0][0]},${H} Z`;
+  const last = points[points.length - 1];
+  return `
+    <div class="sparkline-container">
+    <svg class="sparkline" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"
+         style="display: block;">
+      <defs>
+        <linearGradient id="sg-${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" style="stop-color: ${color}; stop-opacity: 0.3;"/>
+          <stop offset="100%" style="stop-color: ${color}; stop-opacity: 0.02;"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaPath}" fill="url(#sg-${id})" />
+      <path d="${linePath}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${last[0]}" cy="${last[1]}" r="2.5" fill="${color}"/>
+    </svg>
+    </div>`;
+}
 
 // ================= SVG ICONS =================
 const ICONS = {
@@ -10,18 +56,18 @@ const ICONS = {
   calendar: `<svg class="icon" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg>`,
   tag: `<svg class="icon" viewBox="0 0 24 24"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>`,
   info: `<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`,
-  
+
   // Stats
   files: `<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>`,
   chars: `<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z"/></svg>`,
   code: `<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>`,
   tokens: `<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L12 14.17l3.59-3.59L17 12l-5 5z"/></svg>`,
-  
+
   // Charts
   chartPie: `<svg class="icon" viewBox="0 0 24 24"><path d="M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z"/></svg>`,
   chartBar: `<svg class="icon" viewBox="0 0 24 24"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/><path d="M19 19H5V5h14v14z" fill="none"/></svg>`,
   chartLine: `<svg class="icon" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>`,
-  
+
   // Tree
   folder: `<svg class="icon" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`,
   file: `<svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`,
@@ -37,7 +83,7 @@ const ICONS = {
   // Misc
   complexity: `<svg class="icon" viewBox="0 0 24 24"><path d="M13.5 2c-1.93 0-3.5 1.57-3.5 3.5H8v10h2v3.5c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5V5.5c0-1.93-1.57-3.5-3.5-3.5zm0 17c-1.1 0-2-.9-2-2v-3.5h4V17c0 1.1-.9 2-2 2zm0-7.5h-2v-4h4v4zm0-6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>`,
   menu: `<svg class="icon" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>`,
-  
+
   // Heatmap
   heatmap: `<svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>`,
   fire: `<svg class="icon" viewBox="0 0 24 24"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>`
@@ -52,7 +98,7 @@ function generateHead(projectName, libs) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🌙 ${projectName} - 项目统计报告</title>
+  <title>${escapeHtml(projectName)} - 项目统计报告</title>
   ${libs.chartJs ? `<script>${libs.chartJs}</script>` : '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>'}
   ${libs.particlesJs ? `<script>${libs.particlesJs}</script>` : '<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>'}
   <style><!-- STYLES_PLACEHOLDER --></style>
@@ -74,10 +120,10 @@ function generateHeader(projectName, subtitle = '项目统计可视化报告 · 
     </div>
     <div class="header-content">
       <h1>
-        ${ICONS.code} ${projectName}
+        ${ICONS.code} ${escapeHtml(projectName)}
       </h1>
       <div class="subtitle">
-        ${ICONS.chartLine} ${subtitle}
+        ${ICONS.chartLine} ${escapeHtml(subtitle)}
       </div>
     </div>
   </div>`;
@@ -93,21 +139,21 @@ function generateMetaCards(timestamp, projectType) {
       <div class="meta-icon-wrapper">${ICONS.calendar}</div>
       <div class="meta-content">
         <div class="meta-label">生成时间</div>
-        <div class="meta-value selectable">${timestamp}</div>
+        <div class="meta-value selectable">${escapeHtml(timestamp)}</div>
       </div>
     </div>
     <div class="meta-card hover-lift stagger-item">
       <div class="meta-icon-wrapper">${ICONS.tag}</div>
       <div class="meta-content">
         <div class="meta-label">项目类型</div>
-        <div class="meta-value">${projectType}</div>
+        <div class="meta-value">${escapeHtml(projectType)}</div>
       </div>
     </div>
     <div class="meta-card hover-lift stagger-item">
       <div class="meta-icon-wrapper">${ICONS.info}</div>
       <div class="meta-content">
         <div class="meta-label">工具版本</div>
-        <div class="meta-value">v3.3.0</div>
+        <div class="meta-value">${getVersion()}</div>
       </div>
     </div>
   </div>`;
@@ -142,16 +188,16 @@ function generateComparisonSection(comparison, formatNumber) {
     return `
       <div class="comp-card hover-lift stagger-item">
         <div class="comp-header">
-          ${label}
+          ${escapeHtml(label)}
         </div>
         <div class="comp-diff ${trendClass}">
           ${trendIcon}
-          <span>${change.diffFormatted}</span>
-          <span class="text-sm opacity-75">(${change.rateFormatted})</span>
+          <span>${escapeHtml(change.diffFormatted)}</span>
+          <span class="text-sm opacity-75">(${escapeHtml(change.rateFormatted)})</span>
         </div>
         <div class="text-sm text-secondary flex justify-between mt-2">
-          <span>前: ${formatNumber(change.old)}</span>
-          <span>现: ${formatNumber(change.new)}</span>
+          <span>前: ${escapeHtml(formatNumber(change.old))}</span>
+          <span>现: ${escapeHtml(formatNumber(change.new))}</span>
         </div>
       </div>
     `;
@@ -164,8 +210,8 @@ function generateComparisonSection(comparison, formatNumber) {
       <button id="toggleComparisonBtn" class="btn btn-primary btn-sm">隐藏对比</button>
     </div>
     <div class="meta-label" style="margin-bottom: 1rem;">
-      对比基准: <span style="color: var(--accent-secondary);">${previousLabel}</span>
-      ${comparison.previousTag ? `<span class="tag">#${comparison.previousTag}</span>` : ''}
+      对比基准: <span style="color: var(--accent-secondary);">${escapeHtml(previousLabel)}</span>
+      ${comparison.previousTag ? `<span class="tag">#${escapeHtml(comparison.previousTag)}</span>` : ''}
     </div>
     <div id="comparisonContent">
       <div class="comparison-grid">
@@ -178,7 +224,11 @@ function generateComparisonSection(comparison, formatNumber) {
 /**
  * 生成核心统计卡片区域
  */
-function generateCoreStats(stats, formatNumber, formatSize, languageStats) {
+function generateCoreStats(stats, formatNumber, formatSize, languageStats, trendData) {
+  const filesSparkline = trendData?.files ? generateSparkline(trendData.files, '#00d4ff', 'files') : '';
+  const codeLinesSparkline = trendData?.codeLines ? generateSparkline(trendData.codeLines, '#00ff88', 'codelines') : '';
+  const tokensSparkline = trendData?.tokens ? generateSparkline(trendData.tokens, '#c770f0', 'tokens') : '';
+
   let html = `
   <div class="section">
     <div class="section-header">
@@ -190,35 +240,38 @@ function generateCoreStats(stats, formatNumber, formatSize, languageStats) {
           <div class="stat-icon">${ICONS.files}</div>
           <div class="stat-label">文件统计</div>
         </div>
-        <div class="stat-value">${formatNumber(stats.files.total)}</div>
+        <div class="stat-value">${escapeHtml(formatNumber(stats.files.total))}</div>
         <div class="stat-sub">总计文件数量</div>
+        ${filesSparkline}
       </div>
       <div class="stat-card will-change-transform stagger-item">
         <div class="stat-header">
           <div class="stat-icon">${ICONS.chars}</div>
           <div class="stat-label">总字符数</div>
         </div>
-        <div class="stat-value">${formatNumber(stats.text.totalChars)}</div>
-        <div class="stat-sub">${formatSize(stats.text.totalChars)}</div>
+        <div class="stat-value">${escapeHtml(formatNumber(stats.text.totalChars))}</div>
+        <div class="stat-sub">${escapeHtml(formatSize(stats.text.totalChars))}</div>
       </div>
       <div class="stat-card will-change-transform stagger-item">
         <div class="stat-header">
           <div class="stat-icon">${ICONS.code}</div>
           <div class="stat-label">代码行数</div>
         </div>
-        <div class="stat-value">${formatNumber(stats.code.totalLines)}</div>
+        <div class="stat-value">${escapeHtml(formatNumber(stats.code.totalLines))}</div>
         <div class="stat-sub">有效代码行</div>
+        ${codeLinesSparkline}
       </div>
       <div class="stat-card will-change-transform stagger-item">
         <div class="stat-header">
           <div class="stat-icon">${ICONS.tokens}</div>
           <div class="stat-label">估算 Tokens</div>
         </div>
-        <div class="stat-value">${formatNumber(stats.tokens.estimated)}</div>
+        <div class="stat-value">${escapeHtml(formatNumber(stats.tokens.estimated))}</div>
         <div class="stat-sub">AI 上下文开销</div>
+        ${tokensSparkline}
       </div>
     </div>`;
-  
+
   // 语言详细统计卡片
   if (Object.keys(languageStats).length > 0) {
     html += `
@@ -232,34 +285,34 @@ function generateCoreStats(stats, formatNumber, formatSize, languageStats) {
         .map(([lang, langStats], index) => `
           <div class="lang-card hover-border-glow stagger-item" style="animation-delay: ${0.1 + index * 0.05}s;">
             <div class="lang-header">
-              <div class="lang-name">${lang}</div>
-              <div style="font-size: 0.85rem; color: var(--text-secondary);">${formatNumber(langStats.files)} 文件</div>
+              <div class="lang-name">${escapeHtml(lang)}</div>
+              <div style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHtml(formatNumber(langStats.files))} 文件</div>
             </div>
             <div class="lang-stats">
               <div class="lang-stat-item">
                 <span class="lang-stat-label">代码行</span>
-                <span class="lang-stat-val" style="color: var(--accent-primary);">${formatNumber(langStats.codeLines)}</span>
+                <span class="lang-stat-val" style="color: var(--accent-primary);">${escapeHtml(formatNumber(langStats.codeLines))}</span>
               </div>
               <div class="lang-stat-item">
                 <span class="lang-stat-label">注释行</span>
-                <span class="lang-stat-val" style="color: var(--accent-secondary);">${formatNumber(langStats.commentLines)}</span>
+                <span class="lang-stat-val" style="color: var(--accent-secondary);">${escapeHtml(formatNumber(langStats.commentLines))}</span>
               </div>
               <div class="lang-stat-item">
                 <span class="lang-stat-label">大小</span>
-                <span class="lang-stat-val" style="color: var(--text-secondary);">${formatSize(langStats.totalChars)}</span>
+                <span class="lang-stat-val" style="color: var(--text-secondary);">${escapeHtml(formatSize(langStats.totalChars))}</span>
               </div>
             </div>
           </div>
         `).join('')}
     </div>`;
   }
-  
+
   html += `</div>`;
   return html;
 }
 
 /**
- * 生成可视化图表区域
+ * 生成可视化图表区域（含语言分布双视图切换）
  */
 function generateChartSection() {
   return `
@@ -269,7 +322,13 @@ function generateChartSection() {
     </div>
     <div class="chart-grid">
       <div class="chart-container">
-        <div class="chart-title">语言分布（文件数）</div>
+        <div class="chart-title" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-sm);">
+          <span>语言分布</span>
+          <div class="btn-group" id="langChartToggle">
+            <button class="btn btn-sm btn-primary" data-mode="files">文件数</button>
+            <button class="btn btn-sm" data-mode="codeLines">代码行</button>
+          </div>
+        </div>
         <div class="chart-wrapper">
           <canvas id="languageChart"></canvas>
         </div>
@@ -309,21 +368,27 @@ function generateLanguageCodeChart(hasLanguageStats) {
 }
 
 /**
- * 生成历史趋势分析区域
+ * 生成历史趋势分析区域（含 codeLines 第四维度）
  */
 function generateTrendSection(hasTrendData, trendDataLength) {
   if (!hasTrendData) return '';
-  
+
   return `
   <div class="section">
     <div class="section-header">
-      <h2 class="section-title">${ICONS.trendUp} 历史趋势分析 (最近 ${trendDataLength} 次)</h2>
+      <h2 class="section-title">${ICONS.trendUp} 历史趋势分析 (最近 ${escapeHtml(String(trendDataLength))} 次)</h2>
     </div>
     <div class="chart-grid">
       <div class="chart-container">
-        <div class="chart-title">代码行数趋势</div>
+        <div class="chart-title">总行数趋势</div>
         <div class="chart-wrapper">
           <canvas id="trendLinesChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-container">
+        <div class="chart-title">代码行数趋势</div>
+        <div class="chart-wrapper">
+          <canvas id="trendCodeLinesChart"></canvas>
         </div>
       </div>
       <div class="chart-container">
@@ -346,10 +411,9 @@ function generateTrendSection(hasTrendData, trendDataLength) {
  * 生成项目结构区域
  */
 function generateFileTreeSection() {
-  // 搜索图标 SVG
   const searchIcon = `<svg class="icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/></svg>`;
   const clearIcon = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>`;
-  
+
   return `
   <div class="section">
     <div class="section-header" style="flex-wrap: wrap; gap: 1rem;">
@@ -382,26 +446,28 @@ function generateFileTreeSection() {
 }
 
 /**
- * 生成语言详细统计表格
+ * 生成语言详细统计表格（可排序 + 代码率进度条）
  */
 function generateLanguageStatsTable(languageStats, formatNumber, formatSize) {
+  const sortIcon = `<svg class="icon icon-sm sort-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z" fill="currentColor"/></svg>`;
+
   return `
   <div class="section">
     <div class="section-header">
       <h2 class="section-title">${ICONS.menu} 语言详细统计表</h2>
     </div>
     <div class="table-container">
-      <table>
+      <table id="langStatsTable">
         <thead>
           <tr>
-            <th>语言</th>
-            <th>文件数</th>
-            <th>总字符</th>
-            <th>总行数</th>
-            <th>代码行</th>
-            <th>注释行</th>
-            <th>空白行</th>
-            <th>代码率</th>
+            <th data-sort="lang" class="sortable">语言 ${sortIcon}</th>
+            <th data-sort="files" data-type="number" class="sortable">文件数 ${sortIcon}</th>
+            <th data-sort="chars" data-type="number" class="sortable">总字符 ${sortIcon}</th>
+            <th data-sort="totallines" data-type="number" class="sortable">总行数 ${sortIcon}</th>
+            <th data-sort="codelines" data-type="number" class="sortable">代码行 ${sortIcon}</th>
+            <th data-sort="commentlines" data-type="number" class="sortable">注释行 ${sortIcon}</th>
+            <th data-sort="blanklines" data-type="number" class="sortable">空白行 ${sortIcon}</th>
+            <th data-sort="coderate" data-type="number" class="sortable">代码率 ${sortIcon}</th>
           </tr>
         </thead>
         <tbody>
@@ -411,21 +477,35 @@ function generateLanguageStatsTable(languageStats, formatNumber, formatSize) {
               const codeRate = langStats.totalLines > 0
                 ? ((langStats.codeLines / langStats.totalLines) * 100).toFixed(1)
                 : '0.0';
-              
+
               let rateClass = 'rate-low';
               if (codeRate > 70) rateClass = 'rate-high';
               else if (codeRate > 50) rateClass = 'rate-mid';
 
               return `
-                <tr>
-                  <td style="font-weight: 600; color: var(--accent-tertiary);">${lang}</td>
-                  <td>${formatNumber(langStats.files)}</td>
-                  <td>${formatSize(langStats.totalChars)}</td>
-                  <td>${formatNumber(langStats.totalLines)}</td>
-                  <td style="color: var(--accent-primary);">${formatNumber(langStats.codeLines)}</td>
-                  <td style="color: var(--accent-secondary);">${formatNumber(langStats.commentLines)}</td>
-                  <td style="color: var(--text-secondary);">${formatNumber(langStats.blankLines)}</td>
-                  <td><span class="rate-badge ${rateClass}">${codeRate}%</span></td>
+                <tr data-lang="${escapeHtml(lang)}"
+                    data-files="${langStats.files}"
+                    data-chars="${langStats.totalChars}"
+                    data-totallines="${langStats.totalLines}"
+                    data-codelines="${langStats.codeLines}"
+                    data-commentlines="${langStats.commentLines}"
+                    data-blanklines="${langStats.blankLines}"
+                    data-coderate="${codeRate}">
+                  <td style="font-weight: 600; color: var(--accent-tertiary);">${escapeHtml(lang)}</td>
+                  <td>${escapeHtml(formatNumber(langStats.files))}</td>
+                  <td>${escapeHtml(formatSize(langStats.totalChars))}</td>
+                  <td>${escapeHtml(formatNumber(langStats.totalLines))}</td>
+                  <td style="color: var(--accent-primary);">${escapeHtml(formatNumber(langStats.codeLines))}</td>
+                  <td style="color: var(--accent-secondary);">${escapeHtml(formatNumber(langStats.commentLines))}</td>
+                  <td style="color: var(--text-secondary);">${escapeHtml(formatNumber(langStats.blankLines))}</td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                      <div class="progress-container" style="flex: 1; min-width: 50px; padding: 2px; border: none;">
+                        <div class="progress-bar" style="width: ${codeRate}%; height: 4px;"></div>
+                      </div>
+                      <span class="rate-badge ${rateClass}">${codeRate}%</span>
+                    </div>
+                  </td>
                 </tr>
               `;
             }).join('')}
@@ -447,19 +527,19 @@ function generateComplexitySection(stats, formatNumber, formatSize) {
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-label">平均行长度</div>
-        <div class="stat-value">${stats.complexity.avgLineLength}</div>
+        <div class="stat-value">${escapeHtml(String(stats.complexity.avgLineLength))}</div>
         <div class="stat-sub">字符/行</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">平均文件大小</div>
-        <div class="stat-value">${formatSize(stats.complexity.avgFileSize)}</div>
+        <div class="stat-value">${escapeHtml(formatSize(stats.complexity.avgFileSize))}</div>
         <div class="stat-sub">每文件</div>
       </div>
       <div class="stat-card" style="grid-column: span 2;">
         <div class="stat-label">最大文件</div>
-        <div class="stat-value" style="font-size: 1.5rem; word-break: break-all;">${stats.files.largest.path}</div>
+        <div class="stat-value" style="font-size: 1.5rem; word-break: break-all;">${escapeHtml(stats.files.largest.path)}</div>
         <div class="stat-sub">
-          <span style="color: var(--accent-primary);">${formatNumber(stats.files.largest.lines)} 行</span>
+          <span style="color: var(--accent-primary);">${escapeHtml(formatNumber(stats.files.largest.lines))} 行</span>
         </div>
       </div>
     </div>
@@ -467,52 +547,60 @@ function generateComplexitySection(stats, formatNumber, formatSize) {
 }
 
 /**
- * 生成文件大小热力图区域
- * @param {Array} fileList - 文件列表 [{relativePath, size, lines}]
- * @param {Function} formatSize - 格式化函数
- * @returns {string} HTML
+ * 生成文件大小热力图 — Treemap 布局 + 对数尺度
  */
 function generateHeatmapSection(fileList, formatSize) {
   if (!fileList || fileList.length === 0) {
     return '';
   }
-  
-  // 按大小排序并取前50个
+
   const topFiles = [...fileList]
     .sort((a, b) => b.size - a.size)
     .slice(0, 50);
-  
+
   if (topFiles.length === 0) return '';
-  
-  // 计算热力图等级
+
   const maxSize = topFiles[0].size;
+  const minSize = Math.max(topFiles[topFiles.length - 1].size, 1);
+
+  // 对数尺度分级
   const getHeatLevel = (size) => {
-    const ratio = size / maxSize;
-    if (ratio > 0.8) return 5;
-    if (ratio > 0.6) return 4;
-    if (ratio > 0.4) return 3;
-    if (ratio > 0.2) return 2;
-    if (ratio > 0.1) return 1;
+    if (size <= 0) return 0;
+    const logMax = Math.log(maxSize);
+    const logMin = Math.log(minSize);
+    const normalized = logMax === logMin ? 1 : (Math.log(size) - logMin) / (logMax - logMin);
+    if (normalized > 0.85) return 5;
+    if (normalized > 0.7) return 4;
+    if (normalized > 0.5) return 3;
+    if (normalized > 0.3) return 2;
+    if (normalized > 0.15) return 1;
     return 0;
   };
-  
+
   const heatmapItems = topFiles.map((file, index) => {
     const level = getHeatLevel(file.size);
     const fileName = file.relativePath.split('/').pop() || file.relativePath;
-    const dirPath = file.relativePath.split('/').slice(0, -1).join('/');
-    
+
+    // Treemap span: 根据排名分配面积
+    const rank = index / topFiles.length;
+    let spanClass = '';
+    if (rank < 0.06) spanClass = 'treemap-xl';
+    else if (rank < 0.16) spanClass = 'treemap-lg';
+    else if (rank < 0.4) spanClass = 'treemap-md';
+
     return `
-      <div class="heatmap-item heat-level-${level} stagger-item"
-           data-tooltip="${file.relativePath}"
-           data-tooltip-pos="bottom"
+      <div class="heatmap-item heat-level-${level} ${spanClass} stagger-item"
+           data-tooltip="${escapeHtml(file.relativePath)}"
            style="animation-delay: ${Math.min(0.05 + index * 0.02, 0.5)}s;">
         <span class="heatmap-bar"></span>
-        <span class="heatmap-name">${fileName}</span>
-        <span class="heatmap-size">${formatSize(file.size)}</span>
+        <div class="heatmap-content">
+          <span class="heatmap-name">${escapeHtml(fileName)}</span>
+          <span class="heatmap-size">${escapeHtml(formatSize(file.size))}</span>
+        </div>
       </div>
     `;
   }).join('');
-  
+
   return `
   <div class="section">
     <div class="section-header">
@@ -533,7 +621,7 @@ function generateHeatmapSection(fileList, formatSize) {
           <span>较小</span>
         </div>
         <div class="legend-item">
-          <span class="legend-color" style="background: #8b5cf6;"></span>
+          <span class="legend-color" style="background: var(--heatmap-medium);"></span>
           <span>中等</span>
         </div>
         <div class="legend-item">
@@ -559,8 +647,8 @@ function generateHeatmapSection(fileList, formatSize) {
 function generateFooter(timestamp) {
   return `
   <div class="footer animate-fade-in">
-    <p class="mb-2">由项目统计工具 v3.3.0 自动生成</p>
-    <p class="text-muted text-sm">${timestamp} · Night Theme V3.3 · Ω Code Agent</p>
+    <p class="mb-2">由项目统计工具 ${getVersion()} 自动生成</p>
+    <p class="text-muted text-sm">${escapeHtml(timestamp)} · ${VERSION_NAME} · Ω Code Agent</p>
   </div>`;
 }
 
@@ -578,5 +666,6 @@ module.exports = {
   generateComparisonSection,
   generateHeatmapSection,
   generateFooter,
-  ICONS // 导出 ICONS 供 scripts.js 可能使用 (如果需要动态插入)
+  ICONS,
+  escapeHtml
 };
