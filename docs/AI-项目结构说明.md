@@ -2,7 +2,7 @@
 
 本项目采用模块化架构，职责清晰，便于 AI 辅助开发和维护。
 
-> **版本**: v3.3.0 Ω 模块化重构版
+> **版本**: v3.4.0 Ω 数据可视化增强版
 
 ---
 
@@ -89,28 +89,41 @@ project-stats-tool/
 ### 模板层 (Night Theme V3)
 
 #### [`templates/components.js`](../src/templates/components.js:1) - HTML 组件
-**职责 (v3.0.0)**:
+**职责 (v3.4.0)**:
 - **SVG 图标集**: 内置完整的 SVG 图标定义 (`ICONS` 对象)，取代 Emoji。
-- **组件生成**: 提供 `generateHeader`, `generateCoreStats`, `generateFileTreeSection` 等函数。
-- **结构定义**: 定义基于 Grid 的现代页面结构。
+- **XSS 防护**: `escapeHtml()` 服务端转义函数，所有用户数据插值点均已转义。
+- **组件生成**: 提供 `generateHeader`, `generateCoreStats`, `generateFileTreeSection` 等 12+ 组件函数。
+- **Sparkline**: `generateSparkline()` 纯 SVG 迷你折线图（120×32px），嵌入核心统计卡片。
+- **Treemap 热力图**: 对数尺度分级 + CSS Grid span 等级（xl/lg/md）。
+- **可排序表格**: 表头带 `data-sort`/`data-type` 属性 + 代码率内联进度条。
+- **语言图切换**: btn-group 双视图按钮（文件数 / 代码行）。
+- **版本导入**: 从 `version.js` 导入，消除硬编码版本号。
 
 #### [`templates/styles.css.js`](../src/templates/styles.css.js:1) - CSS 入口
 **职责 (v3.3.0)**:
 - **模块合并**: 重导出 `./styles/index.js`，向后兼容旧引用。
 
-#### [`templates/styles/`](../src/templates/styles/) - CSS 模块化目录 🆕
-**职责 (v3.3.0)**:
-- **[`base.css.js`](../src/templates/styles/base.css.js:1)**: CSS 变量、Nuclear Reset、Scrollbar、Selection。
+#### [`templates/styles/`](../src/templates/styles/) - CSS 模块化目录
+**职责 (v3.4.0)**:
+> 所有 `:hover` 规则已包裹 `@media (hover: hover)`，防止触屏粘滞。z-index 统一使用 `var(--z-*)` token。
+
+- **[`base.css.js`](../src/templates/styles/base.css.js:1)**: CSS 变量（含 `--heatmap-medium`）、Nuclear Reset、Scrollbar、Selection。
 - **[`layout.css.js`](../src/templates/styles/layout.css.js:1)**: Grid 系统、Header、Section、响应式断点。
-- **[`components.css.js`](../src/templates/styles/components.css.js:1)**: 语言卡片、热力图、文件树、表格、Tooltip。
+- **[`components.css.js`](../src/templates/styles/components.css.js:1)**: 语言卡片、**Treemap 热力图**（6 列 Grid + span 等级）、文件树、**可排序表格**（sort 指示器 + 进度条）、Tooltip、**Sparkline**、**图表联动高亮**（`.chart-highlight` / `.row-highlight`）、**语言图切换按钮**。
 - **[`animations.css.js`](../src/templates/styles/animations.css.js:1)**: 所有 @keyframes、动画工具类、Stagger 动画。
 - **[`forms.css.js`](../src/templates/styles/forms.css.js:1)**: **完整 Anti-Native 表单**：Input、Textarea、Checkbox、Radio、Toggle、Range、Select、Button。
 - **[`utilities.css.js`](../src/templates/styles/utilities.css.js:1)**: Flexbox、Spacing、Text、Performance 工具类。
 
 #### [`templates/scripts.js`](../src/templates/scripts.js:1) - 前端交互
-**职责 (v3.0.0)**:
+**职责 (v3.4.0)**:
+- **CSS 变量颜色**: 通过 `getComputedStyle` 读取 CSS 变量构建 `COLORS` 对象，消除硬编码主题色。
 - **图表配置**: 配置 Chart.js 的颜色、字体、Tooltip 样式，添加 `layout.padding` 防止裁剪。
-- **文件树交互**: 实现文件树的展开/折叠逻辑，支持 SVG 图标切换。
+- **语言图双视图**: 存储 `langChartInstance`，支持文件数/代码行数据切换。
+- **4 维趋势图**: totalLines、codeLines、files、tokens 四个维度。
+- **表格排序**: 表头点击排序逻辑，支持数字和文本列。
+- **图表联动**: 点击语言分布图扇区 → `highlightLanguageInTree()` + `scrollToLanguageRow()`。
+- **XSS 防护**: `_esc()` 客户端 HTML 实体转义，用于文件树动态渲染。
+- **文件树交互**: 展开/折叠、搜索高亮、路径复制、SVG 图标切换。
 - **粒子背景**: 初始化 `particles.js` 动态背景。
 
 ---
@@ -212,7 +225,7 @@ project-stats.js (Main)
     - 写入 results/<Project>/history.json
     ↓
 [6] 报告生成 & 保存 (output-manager.js)
-    - 🆕 文件热力图组件 (generateHeatmapSection)
+    - Treemap 热力图、Sparkline、可排序表格、图表联动
     - 并行写入所有报告到 results/<Project>/<Timestamp>/
     ↓
 [7] 控制台输出
@@ -228,6 +241,6 @@ project-stats.js (Main)
 
 ---
 
-**最后更新**: 2025-12-16
-**版本**: v3.3.0 (Ω 模块化重构版)
+**最后更新**: 2026-02-12
+**版本**: v3.4.0 (Ω 数据可视化增强版)
 **维护**: Ω Code Agent
